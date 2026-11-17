@@ -1,0 +1,1 @@
+# Aucune dépendance externe : la collecte et le stockage utilisent la bibliothèque standard.

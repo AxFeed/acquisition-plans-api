@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Bulletins techniques plans ILV</title>
+    <link>http://localhost:8000/flux</link>
+    <description>Notes internes sur la qualite des plans</description>
+    <item>
+      <title>Verification des sectionneurs EQUIP_A sur le Secteur Nord</title>
+      <link>http://localhost:8000/notes/equip-a-nord</link>
+      <pubDate>2026-10-15</pubDate>
+      <description>Le sectionneur EQUIP_A#101 du Secteur Nord - Plan 1 est place aux coordonnees (140, 280) sur la voie paire.</description>
+    </item>
+    <item>
+      <title>Suivi des groupes de reserve sans position</title>
+      <link>http://localhost:8000/notes/reserve-poste-central</link>
+      <pubDate>2026-10-22</pubDate>
+      <description>Sur le Poste Central - Plan 3, le groupe de reserve ne possede pas de forme positionnee : sa position reste None jusqu a validation terrain.</description>
+    </item>
+    <item>
+      <title>Correction de lecture des blocs P avec proprietes</title>
+      <link>http://localhost:8000/notes/correctif-bloc-p</link>
+      <pubDate>2026-10-29</pubDate>
+      <description>Les proprietes IlvInteractorProperty entre guillemets ne peuvent plus ecraser le type ou les coordonnees d un IlvMessageLabel.</description>
+    </item>
+  </channel>
+</rss>

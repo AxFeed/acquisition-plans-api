@@ -1,0 +1,77 @@
+{
+  "plan": "poste_central_3",
+  "fichier_source": "poste_central_3.ilv",
+  "secteur": "Poste Central",
+  "origine": "Plan fictif, décodé par le lecteur ILV puis exporté en JSON",
+  "objets": [
+    {
+      "object_id": 1,
+      "element_type": "IlvGraphicSet",
+      "tag": "CARTOUCHE",
+      "type_code": "CARTOUCHE",
+      "internal_id": 1,
+      "value": "Poste Central - Plan 3",
+      "extra_values": [],
+      "position": null,
+      "child_count": 2
+    },
+    {
+      "object_id": 2,
+      "element_type": "IlvGraphicSet",
+      "tag": "SIGNALISATION",
+      "type_code": "SIGNAL_B",
+      "internal_id": 208,
+      "value": "Signal entree poste",
+      "extra_values": [],
+      "position": [
+        260,
+        150
+      ],
+      "child_count": 3
+    },
+    {
+      "object_id": 3,
+      "element_type": "IlvGraphicSet",
+      "tag": "RESERVE",
+      "type_code": "",
+      "internal_id": null,
+      "value": "Groupe reserve sans repere",
+      "extra_values": [
+        "Sous-ensemble auxiliaire"
+      ],
+      "position": null,
+      "child_count": 2
+    },
+    {
+      "object_id": 4,
+      "element_type": "IlvMessageLabel",
+      "tag": "MESSAGE",
+      "type_code": "",
+      "internal_id": null,
+      "value": "Alerte pupitre central",
+      "extra_values": [],
+      "position": [
+        310,
+        120
+      ],
+      "child_count": 0
+    },
+    {
+      "object_id": 5,
+      "element_type": "IlvEllipse",
+      "tag": "INDICATEUR",
+      "type_code": "",
+      "internal_id": null,
+      "value": "r=40x40",
+      "extra_values": [
+        "40",
+        "40"
+      ],
+      "position": [
+        500,
+        220
+      ],
+      "child_count": 0
+    }
+  ]
+}
