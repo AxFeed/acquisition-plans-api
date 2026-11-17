@@ -1,0 +1,77 @@
+{
+  "plan": "secteur_sud_2",
+  "fichier_source": "secteur_sud_2.ilv",
+  "secteur": "Secteur Sud",
+  "origine": "Plan fictif, décodé par le lecteur ILV puis exporté en JSON",
+  "objets": [
+    {
+      "object_id": 1,
+      "element_type": "IlvGraphicSet",
+      "tag": "CARTOUCHE",
+      "type_code": "CARTOUCHE",
+      "internal_id": 1,
+      "value": "Secteur Sud - Plan 2",
+      "extra_values": [],
+      "position": null,
+      "child_count": 2
+    },
+    {
+      "object_id": 2,
+      "element_type": "IlvGraphicSet",
+      "tag": "COMMANDE",
+      "type_code": "EQUIP_A",
+      "internal_id": 102,
+      "value": "Sectionneur Sud 2",
+      "extra_values": [
+        "Voie impaire"
+      ],
+      "position": [
+        160,
+        340
+      ],
+      "child_count": 4
+    },
+    {
+      "object_id": 3,
+      "element_type": "IlvGraphicSet",
+      "tag": "DETECTION",
+      "type_code": "CAPTEUR_C",
+      "internal_id": 305,
+      "value": "Detecteur passage Sud",
+      "extra_values": [],
+      "position": [
+        450,
+        340
+      ],
+      "child_count": 3
+    },
+    {
+      "object_id": 4,
+      "element_type": "IlvLabel",
+      "tag": "TEXTE",
+      "type_code": "",
+      "internal_id": null,
+      "value": "Limite de zone Sud",
+      "extra_values": [],
+      "position": [
+        180,
+        60
+      ],
+      "child_count": 0
+    },
+    {
+      "object_id": 5,
+      "element_type": "IlvPolygon",
+      "tag": "ZONE",
+      "type_code": "",
+      "internal_id": null,
+      "value": "3 points",
+      "extra_values": [],
+      "position": [
+        300,
+        200
+      ],
+      "child_count": 0
+    }
+  ]
+}

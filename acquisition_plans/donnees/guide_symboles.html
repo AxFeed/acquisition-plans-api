@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Guide de lecture des symboles ILV</title>
+</head>
+<body>
+  <header>Menu navigation interne - ne pas indexer</header>
+  <main>
+    <h1>Guide technique des plans vectoriels ILV</h1>
+    <article data-code="IlvGraphicSet">
+      <h2>Groupes graphiques IlvGraphicSet</h2>
+      <p>Un groupe rassemble les libelles et les formes d un meme equipement. Sa position est prise en priorite sur sa premiere polyligne valide, sinon sur son marqueur, sinon sur son premier libelle decale.</p>
+    </article>
+    <article data-code="IlvMessageLabel">
+      <h2>Libelles de message et enveloppes P</h2>
+      <p>Les objets enveloppes par un bloc P contiennent des proprietes entre crochets avant la primitive graphique. Le lecteur masque les chaines entre guillemets pour lire les vraies coordonnees de la primitive.</p>
+    </article>
+    <article data-code="PositionNone">
+      <h2>Objets sans position</h2>
+      <p>Lorsqu un groupe ne contient ni polyligne, ni marqueur, ni libelle decale, sa position vaut None afin de ne pas creer de fausse coordonnee a l origine (0, 0).</p>
+    </article>
+  </main>
+  <footer>Pied de page technique</footer>
+</body>
+</html>

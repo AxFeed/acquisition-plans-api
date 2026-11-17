@@ -1,0 +1,96 @@
+{
+  "plan": "secteur_nord_1",
+  "fichier_source": "secteur_nord_1.ilv",
+  "secteur": "Secteur Nord",
+  "origine": "Plan fictif, décodé par le lecteur ILV puis exporté en JSON",
+  "objets": [
+    {
+      "object_id": 1,
+      "element_type": "IlvGraphicSet",
+      "tag": "CARTOUCHE",
+      "type_code": "CARTOUCHE",
+      "internal_id": 1,
+      "value": "Secteur Nord - Plan 1",
+      "extra_values": [
+        "Indice B - Atelier Demo"
+      ],
+      "position": [
+        20,
+        15
+      ],
+      "child_count": 3
+    },
+    {
+      "object_id": 2,
+      "element_type": "IlvGraphicSet",
+      "tag": "COMMANDE",
+      "type_code": "EQUIP_A",
+      "internal_id": 101,
+      "value": "Sectionneur Nord 1",
+      "extra_values": [
+        "Voie paire"
+      ],
+      "position": [
+        140,
+        280
+      ],
+      "child_count": 4
+    },
+    {
+      "object_id": 3,
+      "element_type": "IlvGraphicSet",
+      "tag": "SIGNALISATION",
+      "type_code": "SIGNAL_B",
+      "internal_id": 204,
+      "value": "Signal arret Nord",
+      "extra_values": [],
+      "position": [
+        320,
+        180
+      ],
+      "child_count": 3
+    },
+    {
+      "object_id": 4,
+      "element_type": "IlvZoomableLabel",
+      "tag": "TITRE",
+      "type_code": "",
+      "internal_id": null,
+      "value": "Zone Atelier Nord",
+      "extra_values": [],
+      "position": [
+        410,
+        110
+      ],
+      "child_count": 0
+    },
+    {
+      "object_id": 5,
+      "element_type": "IlvLine",
+      "tag": "VOIE",
+      "type_code": "",
+      "internal_id": null,
+      "value": "100,280 -> 520,280",
+      "extra_values": [],
+      "position": [
+        100,
+        280
+      ],
+      "child_count": 0
+    },
+    {
+      "object_id": 6,
+      "element_type": "IlvMessageLabel",
+      "tag": "MESSAGE",
+      "type_code": "",
+      "internal_id": null,
+      "value": "Controle local actif",
+      "extra_values": [],
+      "position": [
+        230,
+        95
+      ],
+      "child_count": 0
+    }
+  ]
+}
