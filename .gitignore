@@ -1,0 +1,9 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.coverage
+rapport_couverture/
+.ruff_cache/
+acquisition_plans/donnees/*.sqlite3
+acquisition_plans/donnees/*.jsonl
