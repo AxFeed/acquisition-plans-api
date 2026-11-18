@@ -7,7 +7,12 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from acquisition_plans.tests.valider_donnees import DATA_DIR, check_plan, main
+from acquisition_plans.tests.valider_donnees import (
+    DATA_DIR,
+    check_api_snapshot,
+    check_plan,
+    main,
+)
 
 
 class DataValidationTests(unittest.TestCase):
@@ -41,6 +46,21 @@ class DataValidationTests(unittest.TestCase):
         self.assertTrue(any("position invalide" in error for error in errors))
         self.assertTrue(any("en double" in error for error in errors))
         self.assertTrue(any("champs manquants" in error for error in errors))
+
+    def test_api_snapshot_rules(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "gares.json"
+            path.write_text(json.dumps({"jeu_de_donnees": "gares"}), "utf-8")
+            self.assertEqual(len(check_api_snapshot(path)), 1)
+            path.write_text(
+                json.dumps({"jeu_de_donnees": "g", "enregistrements": [{}]}), "utf-8"
+            )
+            self.assertIn("vides", check_api_snapshot(path)[0])
+            path.write_text(
+                json.dumps({"jeu_de_donnees": "g", "enregistrements": [{"nom": "A"}]}),
+                "utf-8",
+            )
+            self.assertEqual(check_api_snapshot(path), [])
 
 
 if __name__ == "__main__":

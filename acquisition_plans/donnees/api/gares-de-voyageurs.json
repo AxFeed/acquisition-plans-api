@@ -1,0 +1,609 @@
+{
+  "source": "API REST open data SNCF (Opendatasoft Explore v2.1)",
+  "jeu_de_donnees": "gares-de-voyageurs",
+  "url": "https://ressources.data.sncf.com/api/explore/v2.1/catalog/datasets/gares-de-voyageurs/records?limit=50",
+  "licence": "ODbL",
+  "date_collecte": "2026-11-18T08:45:03+00:00",
+  "enregistrements": [
+    {
+      "nom": "Châteauroux",
+      "libellecourt": "CTX",
+      "segment_drg": "A",
+      "position_geographique": {
+        "lon": 1.699536,
+        "lat": 46.809737
+      },
+      "codeinsee": "36044",
+      "codes_uic": "87597005",
+      "id": "0054eed7-a134-4fca-b217-d65e4d2ea153"
+    },
+    {
+      "nom": "Montry - Condé",
+      "libellecourt": "MYD",
+      "segment_drg": "C",
+      "position_geographique": {
+        "lon": 2.8262345,
+        "lat": 48.8908268
+      },
+      "codeinsee": "77315",
+      "codes_uic": "87116400",
+      "id": "00ed0a78-cec6-4246-9781-b0d7fc47e7c7"
+    },
+    {
+      "nom": "Walbourg",
+      "libellecourt": "WAL",
+      "segment_drg": "C",
+      "position_geographique": {
+        "lon": 7.8092705,
+        "lat": 48.8862164
+      },
+      "codeinsee": "67511",
+      "codes_uic": "87213405",
+      "id": "01259499-7ba1-4430-ad6a-db33b26c7748"
+    },
+    {
+      "nom": "Lutzelbourg",
+      "libellecourt": "LZF",
+      "segment_drg": "C",
+      "position_geographique": {
+        "lon": 7.2516808,
+        "lat": 48.7299065
+      },
+      "codeinsee": "57427",
+      "codes_uic": "87215160",
+      "id": "0159825f-fb0c-4bb3-b25e-7240170f05f0"
+    },
+    {
+      "nom": "Montceau-les-Mines",
+      "libellecourt": "MMI",
+      "segment_drg": "C",
+      "position_geographique": {
+        "lon": 4.3610264,
+        "lat": 46.6706636
+      },
+      "codeinsee": "71306",
+      "codes_uic": "87694620",
+      "id": "02912f8b-1546-44c3-a484-d235d0355dca"
+    },
+    {
+      "nom": "Le Bruel",
+      "libellecourt": "BWQ",
+      "segment_drg": "C",
+      "position_geographique": {
+        "lon": 3.358325,
+        "lat": 44.4813286
+      },
+      "codeinsee": "48056",
+      "codes_uic": "87783548",
+      "id": "0313a734-5567-4c88-9a5a-af31e49706e1"
+    },
+    {
+      "nom": "Colomiers",
+      "libellecourt": "COL",
+      "segment_drg": "B",
+      "position_geographique": {
+        "lon": 1.334221,
+        "lat": 43.603734
+      },
+      "codeinsee": "31149",
+      "codes_uic": "87611467",
+      "id": "0449296d-a082-4c47-a934-3a9e643405f1"
+    },
+    {
+      "nom": "Nézel - Aulnay",
+      "libellecourt": "NZL",
+      "segment_drg": "C",
+      "position_geographique": {
+        "lon": 1.8405298,
+        "lat": 48.9387638
+      },
+      "codeinsee": "78451",
+      "codes_uic": "87381731",
+      "id": "047ed38a-9831-40c8-a81d-b1d72b71e480"
+    },
+    {
+      "nom": "Port-de-Bouc",
+      "libellecourt": "PDB",
+      "segment_drg": "C",
+      "position_geographique": {
+        "lon": 4.9846006,
+        "lat": 43.4071317
+      },
+      "codeinsee": "13077",
+      "codes_uic": "87753459",
+      "id": "04eea69a-c989-4534-81c6-088ae2e2efd6"
+    },
+    {
+      "nom": "Anvin",
+      "libellecourt": "ANV",
+      "segment_drg": "C",
+      "position_geographique": {
+        "lon": 2.25494,
+        "lat": 50.446845
+      },
+      "codeinsee": "62036",
+      "codes_uic": "87317255",
+      "id": "05738f3f-8a9a-4e64-9989-db8255399c5c"
+    },
+    {
+      "nom": "Motteville",
+      "libellecourt": "MOT",
+      "segment_drg": "C",
+      "position_geographique": {
+        "lon": 0.8497988,
+        "lat": 49.6365717
+      },
+      "codeinsee": "76456",
+      "codes_uic": "87411280",
+      "id": "06024513-6003-46cc-83aa-eba612718be0"
+    },
+    {
+      "nom": "Pont-Sainte-Maxence",
+      "libellecourt": "PXE",
+      "segment_drg": "B",
+      "position_geographique": {
+        "lon": 2.60289,
+        "lat": 49.30974
+      },
+      "codeinsee": "60509",
+      "codes_uic": "87276329",
+      "id": "06137f10-49fe-4f36-aaf3-f5bd06eedd60"
+    },
+    {
+      "nom": "Maisons-Laffitte",
+      "libellecourt": "MLF",
+      "segment_drg": "B",
+      "position_geographique": {
+        "lon": 2.1443153,
+        "lat": 48.9456394
+      },
+      "codeinsee": "78358",
+      "codes_uic": "87386425",
+      "id": "06d0f659-c55f-4971-9bf7-f85bc3d30780"
+    },
+    {
+      "nom": "Saint-Julien-du-Sault",
+      "libellecourt": "SJX",
+      "segment_drg": "C",
+      "position_geographique": {
+        "lon": 3.302688,
+        "lat": 48.0269195
+      },
+      "codeinsee": "89348",
+      "codes_uic": "87683227",
+      "id": "074791a5-f99f-443a-8bb0-88afc365ce6e"
+    },
+    {
+      "nom": "La Jonchère-Saint-Maurice",
+      "libellecourt": "JOC",
+      "segment_drg": "C",
+      "position_geographique": {
+        "lon": 1.4803853,
+        "lat": 45.9944577
+      },
+      "codeinsee": "87079",
+      "codes_uic": "87592337",
+      "id": "0758d713-bf5c-4387-8d6f-9fe18b1d6dbe"
+    },
+    {
+      "nom": "Savy-Berlette",
+      "libellecourt": "ZYB",
+      "segment_drg": "C",
+      "position_geographique": {
+        "lon": 2.5577316,
+        "lat": 50.3538756
+      },
+      "codeinsee": "62785",
+      "codes_uic": "87342253",
+      "id": "08157d29-2bb6-4bee-9063-cfc80261c41f"
+    },
+    {
+      "nom": "Morbier",
+      "libellecourt": "MKE",
+      "segment_drg": "C",
+      "position_geographique": {
+        "lon": 6.0176446,
+        "lat": 46.5392164
+      },
+      "codeinsee": "39367",
+      "codes_uic": "87715433",
+      "id": "08313347-6ecc-4893-b0b4-8ddb8b40a341"
+    },
+    {
+      "nom": "Haguenau",
+      "libellecourt": "HAG",
+      "segment_drg": "B",
+      "position_geographique": {
+        "lon": 7.7827255,
+        "lat": 48.8134498
+      },
+      "codeinsee": "67180",
+      "codes_uic": "87213058",
+      "id": "0861af25-9c27-41b6-bcd3-228ebb014c17"
+    },
+    {
+      "nom": "Chevrières",
+      "libellecourt": "CGB",
+      "segment_drg": "C",
+      "position_geographique": {
+        "lon": 2.6828025,
+        "lat": 49.3373064
+      },
+      "codeinsee": "60149",
+      "codes_uic": "87276311",
+      "id": "086c8401-2b50-4b26-92e0-b3583bc64651"
+    },
+    {
+      "nom": "Nevers",
+      "libellecourt": "NVS",
+      "segment_drg": "A",
+      "position_geographique": {
+        "lon": 3.150743,
+        "lat": 46.987282
+      },
+      "codeinsee": "58194",
+      "codes_uic": "87696005",
+      "id": "08d23b69-2ec3-4bc2-8cda-91d86c602775"
+    },
+    {
+      "nom": "La Rochelle Porte Dauphine",
+      "libellecourt": "LRA",
+      "segment_drg": "C",
+      "position_geographique": {
+        "lon": -1.1518412,
+        "lat": 46.16755
+      },
+      "codeinsee": "17300",
+      "codes_uic": "87437798",
+      "id": "0926f472-c9cd-4fa5-bf5d-d17471457e14"
+    },
+    {
+      "nom": "La Haie-Fouassière",
+      "libellecourt": "LHE",
+      "segment_drg": "B",
+      "position_geographique": {
+        "lon": -1.392195,
+        "lat": 47.1615899
+      },
+      "codeinsee": "44070",
+      "codes_uic": "87481416",
+      "id": "0953bae8-ba00-49c1-99da-b9d920b9c7a8"
+    },
+    {
+      "nom": "Namps - Quevauvillers",
+      "libellecourt": "NAQ",
+      "segment_drg": "C",
+      "position_geographique": {
+        "lon": 2.1053184,
+        "lat": 49.8082274
+      },
+      "codeinsee": "80582",
+      "codes_uic": "87313379",
+      "id": "09e98a69-6ac0-4dbd-b193-1eb73bfc6af2"
+    },
+    {
+      "nom": "Étainhus - Saint-Romain",
+      "libellecourt": "EAH",
+      "segment_drg": "C",
+      "position_geographique": {
+        "lon": 0.3310234,
+        "lat": 49.5612151
+      },
+      "codeinsee": "76250",
+      "codes_uic": "87413328",
+      "id": "0c01ab37-2701-4221-8985-f17ed58ad853"
+    },
+    {
+      "nom": "Ingwiller",
+      "libellecourt": "IGW",
+      "segment_drg": "B",
+      "position_geographique": {
+        "lon": 7.477155,
+        "lat": 48.8723277
+      },
+      "codeinsee": "67222",
+      "codes_uic": "87213785",
+      "id": "0c28405a-32e2-4349-a54f-468f77acb078"
+    },
+    {
+      "nom": "Vaas",
+      "libellecourt": "VAH",
+      "segment_drg": "C",
+      "position_geographique": {
+        "lon": 0.3165096,
+        "lat": 47.6707702
+      },
+      "codeinsee": "72364",
+      "codes_uic": "87396598",
+      "id": "0c6e9e06-d347-439e-900b-54412fc1f018"
+    },
+    {
+      "nom": "Mouy - Bury",
+      "libellecourt": "MUY",
+      "segment_drg": "B",
+      "position_geographique": {
+        "lon": 2.32635,
+        "lat": 49.32045
+      },
+      "codeinsee": "60116",
+      "codes_uic": "87313577",
+      "id": "0d4d328b-e219-4ad1-8580-6c1d404259ba"
+    },
+    {
+      "nom": "Commercy",
+      "libellecourt": "CCY",
+      "segment_drg": "B",
+      "position_geographique": {
+        "lon": 5.58861,
+        "lat": 48.765749
+      },
+      "codeinsee": "55122",
+      "codes_uic": "87175257",
+      "id": "0da968b8-dd3e-469f-9778-a26b3474538b"
+    },
+    {
+      "nom": "Ars-sur-Moselle",
+      "libellecourt": "ASM",
+      "segment_drg": "B",
+      "position_geographique": {
+        "lon": 6.0776461,
+        "lat": 49.0744745
+      },
+      "codeinsee": "57032",
+      "codes_uic": "87192401",
+      "id": "0daf7706-e296-496a-9adf-97a649119d1e"
+    },
+    {
+      "nom": "Balbigny",
+      "libellecourt": "BBY",
+      "segment_drg": "C",
+      "position_geographique": {
+        "lon": 4.187443,
+        "lat": 45.817858
+      },
+      "codeinsee": "42011",
+      "codes_uic": "87726869",
+      "id": "0db3d410-f1ba-4d19-bab5-f5f8e01be2ab"
+    },
+    {
+      "nom": "Saillat - Chassenon",
+      "libellecourt": "XDO",
+      "segment_drg": "C",
+      "position_geographique": {
+        "lon": 0.8117415,
+        "lat": 45.8696297
+      },
+      "codeinsee": "87131",
+      "codes_uic": "87592717",
+      "id": "0dbe655f-c934-4556-9e23-5defc107971e"
+    },
+    {
+      "nom": "Gourland",
+      "libellecourt": "GUL",
+      "segment_drg": "C",
+      "position_geographique": {
+        "lon": -3.1668191,
+        "lat": 48.5609981
+      },
+      "codeinsee": "22067",
+      "codes_uic": "87473801",
+      "id": "0ed22b5c-d13c-4995-9f88-e04ec380ea41"
+    },
+    {
+      "nom": "Kilstett",
+      "libellecourt": "KIL",
+      "segment_drg": "B",
+      "position_geographique": {
+        "lon": 7.8549031,
+        "lat": 48.6793065
+      },
+      "codeinsee": "67237",
+      "codes_uic": "87212324",
+      "id": "0fd90dc8-2c68-473a-a9f7-bdf0dc14ad2d"
+    },
+    {
+      "nom": "Clermont de l'Oise",
+      "libellecourt": "CDO",
+      "segment_drg": "B",
+      "position_geographique": {
+        "lon": 2.41767,
+        "lat": 49.38531
+      },
+      "codeinsee": "60157",
+      "codes_uic": "87313304",
+      "id": "0fee6b22-48f1-4cac-b04d-8ff06771b738"
+    },
+    {
+      "nom": "Crépy-en-Valois",
+      "libellecourt": "CYV",
+      "segment_drg": "B",
+      "position_geographique": {
+        "lon": 2.8864694,
+        "lat": 49.231235
+      },
+      "codeinsee": "60176",
+      "codes_uic": "87271593",
+      "id": "1100f23c-f2e8-4029-83fb-bddec86a265c"
+    },
+    {
+      "nom": "Daours",
+      "libellecourt": "DAO",
+      "segment_drg": "C",
+      "position_geographique": {
+        "lon": 2.4590533,
+        "lat": 49.899267
+      },
+      "codeinsee": "80036",
+      "codes_uic": "87315044",
+      "id": "111e9dd9-8405-4cb1-951f-9362d22d0a14"
+    },
+    {
+      "nom": "Rothau",
+      "libellecourt": "RTH",
+      "segment_drg": "B",
+      "position_geographique": {
+        "lon": 7.2074902,
+        "lat": 48.4590026
+      },
+      "codeinsee": "67414",
+      "codes_uic": "87214726",
+      "id": "121d720d-39fe-4876-a49e-c3a8e0c835c9"
+    },
+    {
+      "nom": "Thouars",
+      "libellecourt": "THQ",
+      "segment_drg": "C",
+      "position_geographique": {
+        "lon": -0.2097941,
+        "lat": 46.9852442
+      },
+      "codeinsee": "79329",
+      "codes_uic": "87487009",
+      "id": "12558066-9c8f-4509-b33d-0df23e91c00b"
+    },
+    {
+      "nom": "Beaune",
+      "libellecourt": "BEA",
+      "segment_drg": "B",
+      "position_geographique": {
+        "lon": 4.848379,
+        "lat": 47.023053
+      },
+      "codeinsee": "21054",
+      "codes_uic": "87713545",
+      "id": "135524a0-a5a1-4282-8383-1aabdd774db1"
+    },
+    {
+      "nom": "Pont-d'Ain",
+      "libellecourt": "PDA",
+      "segment_drg": "C",
+      "position_geographique": {
+        "lon": 5.3343285,
+        "lat": 46.053961
+      },
+      "codeinsee": "01304",
+      "codes_uic": "87743120",
+      "id": "13ff2d70-b6ae-4f06-9fdf-c8b7b4973b62"
+    },
+    {
+      "nom": "Gironde-sur-Dropt",
+      "libellecourt": "GID",
+      "segment_drg": "C",
+      "position_geographique": {
+        "lon": -0.0920127,
+        "lat": 44.583292
+      },
+      "codeinsee": "33187",
+      "codes_uic": "87582858",
+      "id": "14076e7a-f4de-4d4c-87db-adef9b8dd835"
+    },
+    {
+      "nom": "Galuzot",
+      "libellecourt": "GLZ",
+      "segment_drg": "C",
+      "position_geographique": {
+        "lon": 4.3300578,
+        "lat": 46.6421069
+      },
+      "codeinsee": "71486",
+      "codes_uic": "87694638",
+      "id": "15031242-411e-4bde-b4ae-4425e4864acb"
+    },
+    {
+      "nom": "Sablé-sur-Sarthe",
+      "libellecourt": "SAB",
+      "segment_drg": "B",
+      "position_geographique": {
+        "lon": -0.3419359,
+        "lat": 47.8415934
+      },
+      "codeinsee": "72264",
+      "codes_uic": "87396408",
+      "id": "1545ea84-510c-46b3-947d-ecb5f9c2ccf9"
+    },
+    {
+      "nom": "Beaugency",
+      "libellecourt": "BGY",
+      "segment_drg": "B",
+      "position_geographique": {
+        "lon": 1.625938,
+        "lat": 47.778365
+      },
+      "codeinsee": "45028",
+      "codes_uic": "87574160",
+      "id": "15c9d1cf-e18d-4da6-9c08-9e8bb17dbc36"
+    },
+    {
+      "nom": "Montbartier",
+      "libellecourt": "MNG",
+      "segment_drg": "C",
+      "position_geographique": {
+        "lon": 1.264501,
+        "lat": 43.9241555
+      },
+      "codeinsee": "82123",
+      "codes_uic": "87611699",
+      "id": "15d03353-051a-4db8-9df7-78c9a43e5986"
+    },
+    {
+      "nom": "Villepinte",
+      "libellecourt": "VPN",
+      "segment_drg": "B",
+      "position_geographique": {
+        "lon": 2.51205,
+        "lat": 48.96292
+      },
+      "codeinsee": "93078",
+      "codes_uic": "87271452",
+      "id": "169321f1-c34a-4202-b896-17e972c83d2c"
+    },
+    {
+      "nom": "Vertaizon",
+      "libellecourt": "VTZ",
+      "segment_drg": "B",
+      "position_geographique": {
+        "lon": 3.288269,
+        "lat": 45.784543
+      },
+      "codeinsee": "63453",
+      "codes_uic": "87734426",
+      "id": "1759693b-3484-485a-8fe1-d0a0d0177340"
+    },
+    {
+      "nom": "Dol-de-Bretagne",
+      "libellecourt": "DOL",
+      "segment_drg": "B",
+      "position_geographique": {
+        "lon": -1.750536,
+        "lat": 48.54425
+      },
+      "codeinsee": "35095",
+      "codes_uic": "87478073",
+      "id": "18046324-7a3f-4b47-9526-503c0ff397f2"
+    },
+    {
+      "nom": "Wattignies - Templemars",
+      "libellecourt": "WAT",
+      "segment_drg": "C",
+      "position_geographique": {
+        "lon": 3.051975,
+        "lat": 50.5793139
+      },
+      "codeinsee": "59585",
+      "codes_uic": "87286526",
+      "id": "183150a0-fb5d-48fb-a6a0-a6213154f966"
+    },
+    {
+      "nom": "Fouilloy",
+      "libellecourt": "FIY",
+      "segment_drg": "C",
+      "position_geographique": {
+        "lon": 1.8260404,
+        "lat": 49.7366368
+      },
+      "codeinsee": "60248",
+      "codes_uic": "87313841",
+      "id": "187f0902-9805-4ea1-816a-5abb169981db"
+    }
+  ]
+}

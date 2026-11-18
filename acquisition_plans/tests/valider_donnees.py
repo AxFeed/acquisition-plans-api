@@ -101,6 +101,19 @@ def check_rss(path: Path) -> list[str]:
     return [] if complete else [f"{path.name} : aucun bulletin complet"]
 
 
+def check_api_snapshot(path: Path) -> list[str]:
+    try:
+        snapshot = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        return [f"api/{path.name} : JSON invalide ({error})"]
+    records = snapshot.get("enregistrements")
+    if not snapshot.get("jeu_de_donnees") or not isinstance(records, list):
+        return [f"api/{path.name} : champs jeu_de_donnees et enregistrements requis"]
+    if not records or not all(isinstance(item, dict) and item for item in records):
+        return [f"api/{path.name} : enregistrements vides ou invalides"]
+    return []
+
+
 CHECKS = {
     ".json": check_plan,
     ".csv": check_csv,
@@ -118,6 +131,10 @@ def main(data_dir: Path = DATA_DIR) -> int:
             continue
         counts[path.suffix] += 1
         errors.extend(check(path))
+    api_snapshots = sorted((data_dir / "api").glob("*.json"))
+    for path in api_snapshots:
+        errors.extend(check_api_snapshot(path))
+    counts["api"] = len(api_snapshots)
     if counts[".json"] == 0:
         errors.append("aucun plan JSON dans donnees/")
     summary = ", ".join(f"{suffix} {count}" for suffix, count in counts.items())
