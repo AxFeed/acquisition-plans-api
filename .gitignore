@@ -7,3 +7,4 @@ rapport_couverture/
 .ruff_cache/
 acquisition_plans/donnees/*.sqlite3
 acquisition_plans/donnees/*.jsonl
+acquisition_plans/tests/rapport_evaluation_recherche.json

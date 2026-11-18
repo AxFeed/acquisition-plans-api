@@ -1,5 +1,6 @@
 # Chaîne d'intégration et de livraison continues de acquisition-plans-api.
-# Ordre : qualité du code et contrôle des données -> tests.
+# Ordre : qualité du code et contrôle des données -> tests -> évaluation de la
+# recherche.
 
 name: CI/CD acquisition-plans-api
 
@@ -74,4 +75,23 @@ jobs:
         with:
           name: rapport-couverture
           path: rapport_couverture
+          if-no-files-found: ignore
+
+  evaluation:
+    name: Évaluation de la recherche
+    needs: tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Questions de référence (échec sous les seuils)
+        run: python -B -m acquisition_plans.tests.evaluer_recherche
+      - name: Publication du rapport d'évaluation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapport-evaluation
+          path: acquisition_plans/tests/rapport_evaluation_recherche.json
           if-no-files-found: ignore

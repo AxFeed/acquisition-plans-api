@@ -1,0 +1,65 @@
+[
+  {
+    "id": "Q01",
+    "category": "position_equipement",
+    "question": "Quelle est la position du sectionneur EQUIP_A#101 sur le Secteur Nord ?",
+    "expected_keywords": ["140", "280"],
+    "expected_source": "secteur_nord_1"
+  },
+  {
+    "id": "Q02",
+    "category": "signalisation",
+    "question": "Quel est le role et l identifiant du signal sur le Secteur Nord ?",
+    "expected_keywords": ["SIGNAL_B#204", "320", "180"],
+    "expected_source": "secteur_nord_1"
+  },
+  {
+    "id": "Q03",
+    "category": "secteur_sud",
+    "question": "Sur quelle voie se trouve le sectionneur EQUIP_A#102 du Secteur Sud ?",
+    "expected_keywords": ["impaire", "160", "340"],
+    "expected_source": "secteur_sud_2"
+  },
+  {
+    "id": "Q04",
+    "category": "detection",
+    "question": "Quelles sont les coordonnees du detecteur CAPTEUR_C#305 ?",
+    "expected_keywords": ["450", "340"],
+    "expected_source": "secteur_sud_2"
+  },
+  {
+    "id": "Q05",
+    "category": "objet_sans_position",
+    "question": "Pourquoi le groupe de reserve du Poste Central a-t-il une position None ?",
+    "expected_keywords": ["None", "forme", "origine"],
+    "expected_source": "flux_maintenance"
+  },
+  {
+    "id": "Q06",
+    "category": "regle_ilv",
+    "question": "Comment est choisie la position d un groupe graphique IlvGraphicSet ?",
+    "expected_keywords": ["polyligne", "marqueur", "libelle"],
+    "expected_source": "guide_symboles"
+  },
+  {
+    "id": "Q07",
+    "category": "incident_bloc_p",
+    "question": "Comment le lecteur evite-t-il de lire de fausses coordonnees dans un bloc P ?",
+    "expected_keywords": ["guillemets", "primitive"],
+    "expected_source": "guide_symboles"
+  },
+  {
+    "id": "Q08",
+    "category": "nomenclature",
+    "question": "Quelle regle de verification s applique aux equipements EQUIP_A ?",
+    "expected_keywords": ["polyligne", "voie"],
+    "expected_source": "nomenclature_equipements"
+  },
+  {
+    "id": "Q09",
+    "category": "hors_corpus",
+    "question": "Quelle est la vitesse maximale d un TGV sur la ligne Atlantique ?",
+    "expected_keywords": ["ne trouve pas", "plans indexes"],
+    "expected_source": null
+  }
+]

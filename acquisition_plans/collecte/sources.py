@@ -252,10 +252,45 @@ class PlanCollector:
         )
         return self.database.save_document(stored_doc, self._build_chunks(items))
 
+    @staticmethod
+    def _flatten_record(record: dict, prefix: str = "") -> list[str]:
+        parts = []
+        for key, value in record.items():
+            name = f"{prefix}{key}"
+            if isinstance(value, dict):
+                parts.extend(PlanCollector._flatten_record(value, f"{name}."))
+            elif isinstance(value, list):
+                parts.append(f"{name} = {', '.join(str(item) for item in value)}")
+            elif value not in (None, ""):
+                parts.append(f"{name} = {value}")
+        return parts
+
+    def ingest_api_snapshot(self, json_path: str | Path) -> int:
+        """Store a snapshot saved by ``collecte.api_rest`` (one sentence per record)."""
+        path = Path(json_path)
+        raw_text = path.read_text(encoding="utf-8")
+        snapshot = json.loads(raw_text)
+        dataset = snapshot.get("jeu_de_donnees") or path.stem
+        sentences = []
+        for record in snapshot["enregistrements"]:
+            fields = self._flatten_record(record)
+            if fields:
+                sentences.append(
+                    f"Enregistrement {dataset} : " + " ; ".join(fields) + "."
+                )
+        stored_doc = StoredDocument(
+            title=dataset,
+            source_type="api_rest",
+            source_path=snapshot.get("url") or path.name,
+            document_hash=compute_text_hash(raw_text),
+            sector="national",
+        )
+        return self.database.save_document(stored_doc, self._build_chunks(sentences))
+
     def ingest_directory(self, data_dir: str | Path) -> dict[str, int]:
         """Ingest all supported files from a data directory."""
         folder = Path(data_dir)
-        counts = {"ilv": 0, "csv": 0, "html_scraping": 0, "rss": 0}
+        counts = {"ilv": 0, "csv": 0, "html_scraping": 0, "rss": 0, "api_rest": 0}
         for plan_path in sorted(folder.glob("*.json")):
             self.ingest_plan_export(plan_path)
             counts["ilv"] += 1
@@ -268,4 +303,7 @@ class PlanCollector:
         for xml_path in sorted(folder.glob("*.xml")):
             self.ingest_rss_feed(xml_path)
             counts["rss"] += 1
+        for snapshot_path in sorted((folder / "api").glob("*.json")):
+            self.ingest_api_snapshot(snapshot_path)
+            counts["api_rest"] += 1
         return counts

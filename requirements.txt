@@ -1,1 +1,3 @@
-# Aucune dépendance externe : la collecte et le stockage utilisent la bibliothèque standard.
+fastapi==0.163.1
+uvicorn==0.54.0
+pydantic==2.14.3
