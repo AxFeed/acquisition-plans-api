@@ -1,4 +1,4 @@
-code_type;famille;description;regle_verification
+code_type;famille;descr;regle_verification
 EQUIP_A;Commande;Sectionneur d alimentation de secteur;Verifier la presence d une polyligne de position et d un libelle de voie.
 SIGNAL_B;Signalisation;Signal lumineux de protection de zone;Verifier la presence d un marqueur de position et l identifiant apres le caractere #.
 CAPTEUR_C;Detection;Detecteur de passage sur voie;Controler le rattachement au secteur et les coordonnees du marqueur.
