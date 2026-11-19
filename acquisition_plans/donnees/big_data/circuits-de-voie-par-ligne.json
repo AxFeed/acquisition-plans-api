@@ -1,0 +1,94 @@
+{
+  "source": "Open data SNCF Réseau, fichiers Parquet interrogés avec DuckDB",
+  "jeu_de_donnees": "circuits-de-voie-par-ligne",
+  "jeux_sources": {
+    "circuits": "liste-des-circuits-de-voie",
+    "cantonnement": "mode-de-cantonnement-des-lignes"
+  },
+  "urls": [
+    "https://ressources.data.sncf.com/api/explore/v2.1/catalog/datasets/liste-des-circuits-de-voie/exports/parquet?select=code_ligne%2Ccode_voie",
+    "https://ressources.data.sncf.com/api/explore/v2.1/catalog/datasets/mode-de-cantonnement-des-lignes/exports/parquet?select=code_ligne%2Clib_ligne%2Clibelle"
+  ],
+  "licence": "ODbL",
+  "moteur": "DuckDB 1.5.6",
+  "requete": "WITH lignes AS (\n    SELECT code_ligne,\n           min(lib_ligne) AS nom_ligne,\n           string_agg(DISTINCT libelle, ', ' ORDER BY libelle) AS cantonnement\n    FROM read_parquet($cantonnement)\n    GROUP BY code_ligne\n)\nSELECT c.code_ligne,\n       l.nom_ligne,\n       l.cantonnement,\n       count(*) AS circuits,\n       count(DISTINCT c.code_voie) AS voies\nFROM read_parquet($circuits) AS c\nLEFT JOIN lignes AS l\n    ON l.code_ligne = c.code_ligne\nWHERE c.code_ligne IS NOT NULL\nGROUP BY c.code_ligne, l.nom_ligne, l.cantonnement\nORDER BY circuits DESC, c.code_ligne\nLIMIT $limite",
+  "plan_execution": "┌───────────────────────────┐\n│           TOP_N           │\n│    ────────────────────   │\n│          Top: 10          │\n│                           │\n│         Order By:         │\n│     count_star() DESC     │\n│      c.code_ligne ASC     │\n└─────────────┬─────────────┘\n┌─────────────┴─────────────┐\n│       HASH_GROUP_BY       │\n│    ────────────────────   │\n│          Groups:          │\n│             #0            │\n│             #1            │\n│             #2            │\n│                           │\n│        Aggregates:        │\n│        count_star()       │\n│     count(DISTINCT #3)    │\n│                           │\n│        ~16,973 rows       │\n└─────────────┬─────────────┘\n┌─────────────┴─────────────┐\n│         PROJECTION        │\n│    ────────────────────   │\n│         code_ligne        │\n│         nom_ligne         │\n│        cantonnement       │\n│         code_voie         │\n│                           │\n│        ~16,973 rows       │\n└─────────────┬─────────────┘\n┌─────────────┴─────────────┐\n│         HASH_JOIN         │\n│    ────────────────────   │\n│      Join Type: LEFT      │\n│                           │\n│        Conditions:        ├──────────────┐\n│  code_ligne = code_ligne  │              │\n│                           │              │\n│        ~16,973 rows       │              │\n└─────────────┬─────────────┘              │\n┌─────────────┴─────────────┐┌─────────────┴─────────────┐\n│        READ_PARQUET       ││       HASH_GROUP_BY       │\n│    ────────────────────   ││    ────────────────────   │\n│         Function:         ││         Groups: #0        │\n│        READ_PARQUET       ││                           │\n│                           ││        Aggregates:        │\n│        Projections:       ││          min(#1)          │\n│         code_ligne        ││  string_agg(DISTINCT #2)  │\n│         code_voie         ││                           │\n│                           ││                           │\n│        ~16,973 rows       ││        ~1,051 rows        │\n└───────────────────────────┘└─────────────┬─────────────┘\n                             ┌─────────────┴─────────────┐\n                             │         PROJECTION        │\n                             │    ────────────────────   │\n                             │         code_ligne        │\n                             │         lib_ligne         │\n                             │          libelle          │\n                             │                           │\n                             │        ~1,663 rows        │\n                             └─────────────┬─────────────┘\n                             ┌─────────────┴─────────────┐\n                             │        READ_PARQUET       │\n                             │    ────────────────────   │\n                             │         Function:         │\n                             │        READ_PARQUET       │\n                             │                           │\n                             │        Projections:       │\n                             │         code_ligne        │\n                             │         lib_ligne         │\n                             │          libelle          │\n                             │                           │\n                             │        ~1,663 rows        │\n                             └───────────────────────────┘\n",
+  "date_collecte": "2026-11-19T12:43:41+00:00",
+  "totaux": {
+    "circuits": 84867,
+    "lignes": 722,
+    "voies": 4586
+  },
+  "enregistrements": [
+    {
+      "code_ligne": "830000",
+      "nom_ligne": "Ligne de Paris-Lyon à Marseille-St-Charles",
+      "cantonnement": "Block automatique lumineux",
+      "circuits": 5664,
+      "voies": 281
+    },
+    {
+      "code_ligne": "570000",
+      "nom_ligne": "Ligne de Paris-Austerlitz à Bordeaux-St-Jean",
+      "cantonnement": "Block automatique lumineux",
+      "circuits": 3550,
+      "voies": 167
+    },
+    {
+      "code_ligne": "590000",
+      "nom_ligne": "Ligne des Aubrais-Orléans à Montauban-Ville-Bourbon",
+      "cantonnement": "Block automatique lumineux",
+      "circuits": 3308,
+      "voies": 120
+    },
+    {
+      "code_ligne": "420000",
+      "nom_ligne": "Ligne de Paris-Montparnasse à Brest",
+      "cantonnement": "Block automatique lumineux, Block automatique à permissivité restreinte de double voie",
+      "circuits": 3060,
+      "voies": 153
+    },
+    {
+      "code_ligne": "640000",
+      "nom_ligne": "Ligne de Bordeaux-St-Jean à Sète-Ville",
+      "cantonnement": "Block automatique lumineux, Block automatique à permissivité restreinte de double voie",
+      "circuits": 2732,
+      "voies": 77
+    },
+    {
+      "code_ligne": "750000",
+      "nom_ligne": "Ligne de Moret-Veneux-les-Sablons à Lyon-Perrache",
+      "cantonnement": "Block automatique lumineux, Block automatique à permissivité restreinte de double voie",
+      "circuits": 2560,
+      "voies": 40
+    },
+    {
+      "code_ligne": "070000",
+      "nom_ligne": "Ligne de Noisy-le-Sec à Strasbourg-Ville",
+      "cantonnement": "Block automatique lumineux, Block automatique lumineux de voie banalisée",
+      "circuits": 2247,
+      "voies": 139
+    },
+    {
+      "code_ligne": "001000",
+      "nom_ligne": "Ligne de Paris-Est à Mulhouse-Ville",
+      "cantonnement": "Block automatique lumineux, Block automatique à permissivité restreinte de double voie, Block manuel de double voie de type SNCF",
+      "circuits": 2075,
+      "voies": 153
+    },
+    {
+      "code_ligne": "272000",
+      "nom_ligne": "Ligne de Paris-Nord à Lille",
+      "cantonnement": "Block automatique lumineux",
+      "circuits": 1769,
+      "voies": 172
+    },
+    {
+      "code_ligne": "752000",
+      "nom_ligne": "Ligne de Combs-la-Ville à St-Louis (LGV)",
+      "cantonnement": "Block automatique lumineux, Transmission voie-machine 300, Transmission voie-machine 430",
+      "circuits": 1539,
+      "voies": 54
+    }
+  ]
+}
