@@ -9,15 +9,11 @@ import unittest
 from unittest.mock import patch
 
 from acquisition_plans.api.app import create_app
+from acquisition_plans.tests.test_collecte_stockage import SNAPSHOTS
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "donnees"
-# Snapshots written by the extraction scripts (REST API, database, big data).
-SNAPSHOT_COUNTS = [
-    len(list((DATA_DIR / folder).glob("*.json")))
-    for folder in ("api", "base", "big_data")
-]
-DOCUMENTS = 6 + sum(SNAPSHOT_COUNTS)
-SOURCE_TYPES = 4 + sum(1 for count in SNAPSHOT_COUNTS if count)
+DOCUMENTS = 6 + sum(SNAPSHOTS.values())
+SOURCE_TYPES = 4 + sum(1 for count in SNAPSHOTS.values() if count)
 ADMIN_TOKEN = "jeton-de-test"
 USER_TOKEN = "jeton-utilisateur-de-test"
 USER_HEADERS = {"Authorization": f"Bearer {USER_TOKEN}"}

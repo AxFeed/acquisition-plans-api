@@ -1,9 +1,9 @@
 """Validate the source data before it is collected (data test step of the CI).
 
 Checks every file of ``donnees/`` and the snapshots of ``donnees/api``,
-``donnees/base`` and ``donnees/big_data`` against the rules the collector relies on and
-exits with code 1 if one rule is broken, so that the pipeline stops before the
-tests, the evaluation and the delivery.
+``donnees/base``, ``donnees/big_data`` and ``donnees/web`` against the rules the
+collector relies on, and exits with code 1 if one rule is broken, so that the
+pipeline stops before the tests, the evaluation and the delivery.
 
 Run from the repository root::
 
@@ -162,6 +162,25 @@ def check_big_data_snapshot(path: Path) -> list[str]:
     return errors
 
 
+def check_web_snapshot(path: Path) -> list[str]:
+    try:
+        snapshot = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        return [f"web/{path.name} : JSON invalide ({error})"]
+    pages = snapshot.get("pages")
+    if not snapshot.get("licence") or not isinstance(pages, list) or not pages:
+        return [f"web/{path.name} : licence et pages obligatoires"]
+    return [
+        f"web/{path.name}, page {index} : adresse, nom ou paragraphes invalides"
+        for index, page in enumerate(pages, start=1)
+        if not isinstance(page, dict)
+        or not str(page.get("url", "")).startswith("https://")
+        or not page.get("nom")
+        or not page.get("paragraphes")
+        or not all(isinstance(text, str) and text for text in page["paragraphes"])
+    ]
+
+
 CHECKS = {
     ".json": check_plan,
     ".csv": check_csv,
@@ -172,6 +191,7 @@ SNAPSHOT_CHECKS = {
     "api": check_api_snapshot,
     "base": check_database_snapshot,
     "big_data": check_big_data_snapshot,
+    "web": check_web_snapshot,
 }
 
 

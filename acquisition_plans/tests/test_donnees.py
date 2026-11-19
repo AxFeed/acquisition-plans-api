@@ -13,6 +13,7 @@ from acquisition_plans.tests.valider_donnees import (
     check_big_data_snapshot,
     check_database_snapshot,
     check_plan,
+    check_web_snapshot,
     main,
 )
 
@@ -113,6 +114,30 @@ class DataValidationTests(unittest.TestCase):
                 json.dumps({"totaux": totals, "enregistrements": [line]}), "utf-8"
             )
             self.assertEqual(check_big_data_snapshot(path), [])
+
+    def test_web_snapshot_rules(self) -> None:
+        page = {
+            "nom": "bal",
+            "url": "https://exemple.invalid/bal",
+            "paragraphes": ["A."],
+        }
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "pages.json"
+            path.write_text("{", "utf-8")
+            self.assertIn("JSON invalide", check_web_snapshot(path)[0])
+            path.write_text(json.dumps({"pages": [page]}), "utf-8")
+            self.assertIn("licence", check_web_snapshot(path)[0])
+            insecure = dict(page, url="http://exemple.invalid/bal")
+            empty = dict(page, paragraphes=[""])
+            path.write_text(
+                json.dumps({"licence": "CC BY-SA 4.0", "pages": [insecure, empty]}),
+                "utf-8",
+            )
+            self.assertEqual(len(check_web_snapshot(path)), 2)
+            path.write_text(
+                json.dumps({"licence": "CC BY-SA 4.0", "pages": [page]}), "utf-8"
+            )
+            self.assertEqual(check_web_snapshot(path), [])
 
 
 if __name__ == "__main__":

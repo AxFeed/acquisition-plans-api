@@ -94,5 +94,13 @@
     "expected_keywords": ["87213405"],
     "expected_source": "gares-de-voyageurs",
     "expected_answer": ["87213405"]
+  },
+  {
+    "id": "Q13",
+    "category": "scraping_web",
+    "question": "Qu est-ce que le block automatique lumineux ?",
+    "expected_keywords": ["canton"],
+    "expected_source": "block-automatique-lumineux",
+    "expected_answer": ["espacement"]
   }
 ]

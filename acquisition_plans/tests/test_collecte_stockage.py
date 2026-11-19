@@ -13,13 +13,24 @@ from acquisition_plans.collecte.sources import (
 from acquisition_plans.stockage.database import PlanDatabase
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "donnees"
-# Snapshots written by the extraction scripts, by folder and by source type.
+
+
+def count_documents(folder: str) -> int:
+    """Documents stored from a snapshot folder: one per file, one per web page."""
+    paths = sorted((DATA_DIR / folder).glob("*.json"))
+    if folder != "web":
+        return len(paths)
+    return sum(len(json.loads(p.read_text(encoding="utf-8"))["pages"]) for p in paths)
+
+
+# Documents written by the extraction scripts, by source type.
 SNAPSHOTS = {
-    source_type: len(list((DATA_DIR / folder).glob("*.json")))
+    source_type: count_documents(folder)
     for folder, source_type in (
         ("api", "api_rest"),
         ("base", "base_de_donnees"),
         ("big_data", "big_data"),
+        ("web", "scraping_web"),
     )
 }
 
@@ -163,6 +174,35 @@ class CollectionAndStorageTests(unittest.TestCase):
         self.assertIn("cantonnement : BAL", contents[2])
         self.assertIn("(nom non renseigne)", contents[3])
         self.assertEqual(self.database.list_chunks()[0]["title"], "circuits-test")
+
+    def test_web_snapshot_stores_one_document_per_page(self) -> None:
+        snapshot = {
+            "licence": "CC BY-SA 4.0",
+            "pages": [
+                {
+                    "nom": "page-a",
+                    "url": "https://exemple.invalid/a",
+                    "titre": "Page A",
+                    "paragraphes": ["Premier paragraphe.", "Second paragraphe."],
+                },
+                {
+                    "nom": "page-b",
+                    "url": "https://exemple.invalid/b",
+                    "titre": "Page B",
+                    "paragraphes": ["Texte de B."],
+                },
+            ],
+        }
+        path = Path(self.temp_dir.name) / "pages.json"
+        path.write_text(json.dumps(snapshot), encoding="utf-8")
+        self.assertEqual(self.collector.ingest_web_snapshot(path), 2)
+        self.assertEqual(
+            self.database.get_sources_summary(),
+            [{"source": "scraping_web", "documents": 2, "chunks": 3}],
+        )
+        first = self.database.list_chunks()[0]
+        self.assertEqual(first["content"], "Wikipedia, Page A : Premier paragraphe.")
+        self.assertEqual(first["source_path"], "https://exemple.invalid/a")
 
 
 if __name__ == "__main__":
