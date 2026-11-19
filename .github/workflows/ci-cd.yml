@@ -1,6 +1,6 @@
 # Chaîne d'intégration et de livraison continues de acquisition-plans-api.
 # Ordre : qualité du code et contrôle des données -> tests -> évaluation de la
-# recherche.
+# recherche -> livraison de l'image Docker (seulement sur main).
 
 name: CI/CD acquisition-plans-api
 
@@ -95,3 +95,44 @@ jobs:
           name: rapport-evaluation
           path: acquisition_plans/tests/rapport_evaluation_recherche.json
           if-no-files-found: ignore
+
+  livraison:
+    name: Construction, publication et vérification de l'image
+    needs: [tests, evaluation]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Nom de l'image en minuscules
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+      - uses: docker/setup-buildx-action@v3
+      - name: Connexion à GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Construction et publication
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:${{ github.sha }}
+            ${{ env.IMAGE }}:latest
+      - name: Vérification de l'image publiée
+        run: |
+          docker run -d --name verification -p 8000:8000 -e ADMIN_API_KEY=verification "$IMAGE:${GITHUB_SHA}"
+          for essai in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8000/health; then
+              echo
+              echo "Image publiée et fonctionnelle : $IMAGE:${GITHUB_SHA}"
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs verification
+          exit 1
