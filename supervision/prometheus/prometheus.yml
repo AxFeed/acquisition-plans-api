@@ -1,0 +1,15 @@
+# Prometheus collecte /metrics de l'API toutes les 15 secondes et évalue les règles
+# d'alerte. Dans docker-compose.yml, l'API est joignable sous le nom « api ».
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - alertes.yml
+
+scrape_configs:
+  - job_name: acquisition_plans_api
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - api:8000

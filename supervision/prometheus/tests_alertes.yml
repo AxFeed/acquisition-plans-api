@@ -1,0 +1,86 @@
+# Tests des règles d'alerte : séries simulées minute par minute, alertes attendues.
+# Lancement : promtool test rules tests_alertes.yml (depuis ce dossier).
+rule_files:
+  - alertes.yml
+
+evaluation_interval: 1m
+
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'up{job="acquisition_plans_api", instance="api:8000"}'
+        values: "1 1 0 0 0 0"
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: ApiIndisponible
+        exp_alerts: []
+      - eval_time: 2m
+        alertname: ApiIndisponible
+        exp_alerts: []
+      - eval_time: 4m
+        alertname: ApiIndisponible
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              job: acquisition_plans_api
+              instance: api:8000
+            exp_annotations:
+              summary: L'API ne répond plus à Prometheus depuis une minute.
+
+  - interval: 1m
+    input_series:
+      - series: 'ilv_http_requests_total{job="acquisition_plans_api", instance="api:8000"}'
+        values: "0+100x40"
+      - series: 'ilv_http_errors_total{job="acquisition_plans_api", instance="api:8000"}'
+        values: "0+1x10 20+10x30"
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: TauxErreursServeur
+        exp_alerts: []
+      - eval_time: 30m
+        alertname: TauxErreursServeur
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: acquisition_plans_api
+              instance: api:8000
+            exp_annotations:
+              summary: Plus de 5 % d'erreurs serveur (5xx) sur 15 minutes.
+
+  - interval: 1m
+    input_series:
+      - series: 'ilv_chat_fallback_total{job="acquisition_plans_api", instance="api:8000"}'
+        values: "0 0 0 1 1 1 1"
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: ReponsesSansModele
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: ReponsesSansModele
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: acquisition_plans_api
+              instance: api:8000
+            exp_annotations:
+              summary: Au moins une réponse donnée sans le modèle de langage en 15 minutes.
+
+  - interval: 1m
+    input_series:
+      - series: 'ilv_chat_requests_total{job="acquisition_plans_api", instance="api:8000"}'
+        values: "0+1x20"
+      - series: 'ilv_llm_duration_seconds_sum{job="acquisition_plans_api", instance="api:8000"}'
+        values: "0+30x20"
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: GenerationLente
+        exp_alerts: []
+      - eval_time: 12m
+        alertname: GenerationLente
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: acquisition_plans_api
+              instance: api:8000
+            exp_annotations:
+              summary: Génération moyenne au-delà de 25 secondes sur 15 minutes.
