@@ -32,12 +32,16 @@ class MetricsRecorder:
 
     http_requests_total: int = 0
     http_errors_total: int = 0
+    http_client_errors_total: int = 0
     http_duration_seconds_sum: float = 0.0
 
     def record_http(self, status_code: int, duration: float) -> None:
+        """Count server errors (5xx) apart from refused requests (4xx)."""
         self.http_requests_total += 1
-        if status_code >= 400:
+        if status_code >= 500:
             self.http_errors_total += 1
+        elif status_code >= 400:
+            self.http_client_errors_total += 1
         self.http_duration_seconds_sum = round(
             self.http_duration_seconds_sum + duration, 6
         )
@@ -47,9 +51,12 @@ class MetricsRecorder:
             "# HELP ilv_http_requests_total Total HTTP requests handled.",
             "# TYPE ilv_http_requests_total counter",
             f"ilv_http_requests_total {self.http_requests_total}",
-            "# HELP ilv_http_errors_total Total HTTP responses with status >= 400.",
+            "# HELP ilv_http_errors_total Total HTTP server errors (status >= 500).",
             "# TYPE ilv_http_errors_total counter",
             f"ilv_http_errors_total {self.http_errors_total}",
+            "# HELP ilv_http_client_errors_total Total refused requests (status 4xx).",
+            "# TYPE ilv_http_client_errors_total counter",
+            f"ilv_http_client_errors_total {self.http_client_errors_total}",
             "# HELP ilv_http_request_duration_seconds_sum Cumulative HTTP latency.",
             "# TYPE ilv_http_request_duration_seconds_sum counter",
             f"ilv_http_request_duration_seconds_sum {self.http_duration_seconds_sum}",

@@ -63,6 +63,12 @@ Au premier démarrage, la base est créée et les données de `donnees/` sont co
 
 Sans jeton, les routes d'administration répondent 401 ; avec un mauvais jeton, 403.
 
+Sur `/metrics`, `ilv_http_errors_total` compte les erreurs du service (codes 5xx, y compris une exception non gérée, renvoyée en 500 avec un message générique et journalisée avec son type) ; `ilv_http_client_errors_total` compte à part les requêtes refusées (codes 4xx : jeton absent ou faux, saisie invalide, route inconnue comme `/favicon.ico` demandée par un navigateur).
+
+## Suivi des incidents
+
+Un incident est décrit dans un ticket de l'onglet *Issues* (étiquette `bug`) : symptôme, reproduction, diagnostic. La correction est développée sur une branche avec un test qui reproduit le défaut, puis fusionnée par une pull request qui ferme le ticket après le passage de la chaîne.
+
 ## Contrôles et tests en local
 
 Depuis la racine du dépôt, les mêmes commandes que la chaîne :
