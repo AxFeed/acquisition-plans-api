@@ -1,0 +1,131 @@
+{
+  "source": "Base PostgreSQL de maintenance (fictive)",
+  "serveur": "127.0.0.1:5433/maintenance",
+  "requetes": {
+    "interventions": "SELECT e.code_type || '#' || e.numero AS equipement,\n       e.libelle,\n       e.secteur,\n       i.date_intervention,\n       i.nature,\n       i.equipe,\n       i.duree_minutes,\n       i.compte_rendu\nFROM interventions AS i\nINNER JOIN equipements AS e\n    ON e.id = i.equipement_id\nWHERE i.statut = 'realisee'\n  AND i.date_intervention >= %(depuis)s\nORDER BY i.date_intervention DESC, equipement",
+    "synthese": "SELECT e.code_type || '#' || e.numero AS equipement,\n       e.libelle,\n       COUNT(i.id) FILTER (WHERE i.statut = 'realisee') AS realisees,\n       COUNT(i.id) FILTER (WHERE i.statut = 'planifiee') AS planifiees,\n       MAX(i.date_intervention) FILTER (WHERE i.statut = 'realisee') AS derniere\nFROM equipements AS e\nLEFT JOIN interventions AS i\n    ON i.equipement_id = e.id\nGROUP BY e.id, e.code_type, e.numero, e.libelle\nORDER BY equipement"
+  },
+  "parametres": {
+    "depuis": "2026-01-01"
+  },
+  "plan_execution": [
+    "Incremental Sort  (cost=16.38..16.43 rows=2 width=200)",
+    "  Sort Key: i.date_intervention DESC, (((e.code_type || '#'::text) || (e.numero)::text))",
+    "  Presorted Key: i.date_intervention",
+    "  ->  Nested Loop  (cost=0.30..16.37 rows=1 width=200)",
+    "        ->  Index Scan Backward using idx_interventions_statut_date on interventions i  (cost=0.15..8.17 rows=1 width=108)",
+    "              Index Cond: ((statut = 'realisee'::text) AND (date_intervention >= '2026-01-01'::date))",
+    "        ->  Index Scan using equipements_pkey on equipements e  (cost=0.15..8.17 rows=1 width=104)",
+    "              Index Cond: (id = i.equipement_id)"
+  ],
+  "date_collecte": "2026-11-19T12:43:36+00:00",
+  "interventions": [
+    {
+      "equipement": "SIGNAL_B#204",
+      "libelle": "Signal arret Nord",
+      "secteur": "Secteur Nord",
+      "date_intervention": "2026-11-12",
+      "nature": "preventive",
+      "equipe": "Equipe Nord",
+      "duree_minutes": 35,
+      "compte_rendu": "Nettoyage de l optique et mesure de l intensite lumineuse."
+    },
+    {
+      "equipement": "EQUIP_A#102",
+      "libelle": "Sectionneur Sud 2",
+      "secteur": "Secteur Sud",
+      "date_intervention": "2026-11-05",
+      "nature": "preventive",
+      "equipe": "Equipe Sud",
+      "duree_minutes": 40,
+      "compte_rendu": "Controle du sectionneur et graissage du mecanisme."
+    },
+    {
+      "equipement": "SIGNAL_B#208",
+      "libelle": "Signal entree poste",
+      "secteur": "Poste Central",
+      "date_intervention": "2026-10-27",
+      "nature": "corrective",
+      "equipe": "Equipe Poste Central",
+      "duree_minutes": 60,
+      "compte_rendu": "Signal bloque au rouge : relais de commande remplace."
+    },
+    {
+      "equipement": "EQUIP_A#101",
+      "libelle": "Sectionneur Nord 1",
+      "secteur": "Secteur Nord",
+      "date_intervention": "2026-10-15",
+      "nature": "preventive",
+      "equipe": "Equipe Nord",
+      "duree_minutes": 30,
+      "compte_rendu": "Visite de terrain du sectionneur : reperage conforme au plan."
+    },
+    {
+      "equipement": "CAPTEUR_C#305",
+      "libelle": "Detecteur passage Sud",
+      "secteur": "Secteur Sud",
+      "date_intervention": "2026-10-02",
+      "nature": "corrective",
+      "equipe": "Equipe Sud",
+      "duree_minutes": 120,
+      "compte_rendu": "Detecteur muet apres un orage : remplacement de la carte de detection."
+    },
+    {
+      "equipement": "SIGNAL_B#204",
+      "libelle": "Signal arret Nord",
+      "secteur": "Secteur Nord",
+      "date_intervention": "2026-09-22",
+      "nature": "corrective",
+      "equipe": "Equipe Nord",
+      "duree_minutes": 90,
+      "compte_rendu": "Lampe rouge grillee : remplacement de la lampe et essai du feu conforme."
+    },
+    {
+      "equipement": "EQUIP_A#101",
+      "libelle": "Sectionneur Nord 1",
+      "secteur": "Secteur Nord",
+      "date_intervention": "2026-09-08",
+      "nature": "preventive",
+      "equipe": "Equipe Nord",
+      "duree_minutes": 45,
+      "compte_rendu": "Controle du sectionneur et serrage des connexions, aucun defaut constate."
+    }
+  ],
+  "synthese": [
+    {
+      "equipement": "CAPTEUR_C#305",
+      "libelle": "Detecteur passage Sud",
+      "realisees": 1,
+      "planifiees": 1,
+      "derniere": "2026-10-02"
+    },
+    {
+      "equipement": "EQUIP_A#101",
+      "libelle": "Sectionneur Nord 1",
+      "realisees": 2,
+      "planifiees": 1,
+      "derniere": "2026-10-15"
+    },
+    {
+      "equipement": "EQUIP_A#102",
+      "libelle": "Sectionneur Sud 2",
+      "realisees": 1,
+      "planifiees": 0,
+      "derniere": "2026-11-05"
+    },
+    {
+      "equipement": "SIGNAL_B#204",
+      "libelle": "Signal arret Nord",
+      "realisees": 2,
+      "planifiees": 0,
+      "derniere": "2026-11-12"
+    },
+    {
+      "equipement": "SIGNAL_B#208",
+      "libelle": "Signal entree poste",
+      "realisees": 1,
+      "planifiees": 0,
+      "derniere": "2026-10-27"
+    }
+  ]
+}
