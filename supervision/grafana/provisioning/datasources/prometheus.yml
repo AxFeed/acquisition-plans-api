@@ -1,0 +1,10 @@
+# Source de données : le Prometheus du même docker-compose.
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    uid: prometheus-api
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
