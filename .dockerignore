@@ -9,3 +9,4 @@ htmlcov
 **/*.sqlite3
 **/*.jsonl
 acquisition_plans/tests
+**/*.parquet

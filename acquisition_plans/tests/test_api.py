@@ -11,7 +11,13 @@ from unittest.mock import patch
 from acquisition_plans.api.app import create_app
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "donnees"
-API_SNAPSHOTS = len(list((DATA_DIR / "api").glob("*.json")))
+# Snapshots written by the extraction scripts (REST API, database, big data).
+SNAPSHOT_COUNTS = [
+    len(list((DATA_DIR / folder).glob("*.json")))
+    for folder in ("api", "base", "big_data")
+]
+DOCUMENTS = 6 + sum(SNAPSHOT_COUNTS)
+SOURCE_TYPES = 4 + sum(1 for count in SNAPSHOT_COUNTS if count)
 ADMIN_TOKEN = "jeton-de-test"
 
 
@@ -77,7 +83,7 @@ class ApiTests(unittest.TestCase):
     def test_health_plans_and_metrics(self) -> None:
         status, body = call_asgi(self.app, "GET", "/health")
         self.assertEqual(status, 200)
-        self.assertEqual(json.loads(body)["database_documents"], 6 + API_SNAPSHOTS)
+        self.assertEqual(json.loads(body)["database_documents"], DOCUMENTS)
         status, body = call_asgi(self.app, "GET", "/api/plans")
         self.assertEqual(status, 200)
         self.assertEqual(len(json.loads(body)["plans"]), 3)
@@ -109,12 +115,10 @@ class ApiTests(unittest.TestCase):
                 )
             status, body = call_asgi(self.app, "GET", "/api/sources", headers=good)
             self.assertEqual(status, 200)
-            self.assertEqual(
-                len(json.loads(body)["sources"]), 4 + min(API_SNAPSHOTS, 1)
-            )
+            self.assertEqual(len(json.loads(body)["sources"]), SOURCE_TYPES)
             status, body = call_asgi(self.app, "POST", "/api/ingest", headers=good)
         self.assertEqual(status, 200)
-        self.assertEqual(json.loads(body)["integrity"]["documents"], 6 + API_SNAPSHOTS)
+        self.assertEqual(json.loads(body)["integrity"]["documents"], DOCUMENTS)
 
     def test_admin_routes_refuse_everything_without_configured_token(self) -> None:
         with patch.dict(os.environ, {"ADMIN_API_KEY": ""}):

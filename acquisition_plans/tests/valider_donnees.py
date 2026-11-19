@@ -1,6 +1,7 @@
 """Validate the source data before it is collected (data test step of the CI).
 
-Checks every file of ``donnees/`` against the rules the collector relies on and
+Checks every file of ``donnees/`` and the snapshots of ``donnees/api``,
+``donnees/base`` and ``donnees/big_data`` against the rules the collector relies on and
 exits with code 1 if one rule is broken, so that the pipeline stops before the
 tests, the evaluation and the delivery.
 
@@ -114,11 +115,63 @@ def check_api_snapshot(path: Path) -> list[str]:
     return []
 
 
+INTERVENTION_KEYS = {"equipement", "date_intervention", "nature", "compte_rendu"}
+
+
+def check_database_snapshot(path: Path) -> list[str]:
+    try:
+        snapshot = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        return [f"base/{path.name} : JSON invalide ({error})"]
+    rows = snapshot.get("interventions")
+    if not isinstance(rows, list) or not rows:
+        return [f"base/{path.name} : aucune intervention"]
+    if not isinstance(snapshot.get("synthese"), list):
+        return [f"base/{path.name} : synthèse absente"]
+    return [
+        f"base/{path.name}, intervention {index} : champs manquants"
+        for index, row in enumerate(rows, start=1)
+        if not isinstance(row, dict) or not row.keys() >= INTERVENTION_KEYS
+    ]
+
+
+def check_big_data_snapshot(path: Path) -> list[str]:
+    try:
+        snapshot = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        return [f"big_data/{path.name} : JSON invalide ({error})"]
+    totals = snapshot.get("totaux") or {}
+    rows = snapshot.get("enregistrements")
+    if not all(
+        isinstance(totals.get(key), int) and totals[key] > 0
+        for key in ("circuits", "lignes", "voies")
+    ):
+        return [f"big_data/{path.name} : totaux absents ou nuls"]
+    if not isinstance(rows, list) or not rows:
+        return [f"big_data/{path.name} : aucune ligne"]
+    errors = [
+        f"big_data/{path.name}, ligne {index} : code ou comptages invalides"
+        for index, row in enumerate(rows, start=1)
+        if not isinstance(row, dict)
+        or not row.get("code_ligne")
+        or not isinstance(row.get("circuits"), int)
+        or row["circuits"] <= 0
+    ]
+    if not errors and sum(row["circuits"] for row in rows) > totals["circuits"]:
+        errors.append(f"big_data/{path.name} : plus de circuits que le total")
+    return errors
+
+
 CHECKS = {
     ".json": check_plan,
     ".csv": check_csv,
     ".html": check_html,
     ".xml": check_rss,
+}
+SNAPSHOT_CHECKS = {
+    "api": check_api_snapshot,
+    "base": check_database_snapshot,
+    "big_data": check_big_data_snapshot,
 }
 
 
@@ -131,10 +184,11 @@ def main(data_dir: Path = DATA_DIR) -> int:
             continue
         counts[path.suffix] += 1
         errors.extend(check(path))
-    api_snapshots = sorted((data_dir / "api").glob("*.json"))
-    for path in api_snapshots:
-        errors.extend(check_api_snapshot(path))
-    counts["api"] = len(api_snapshots)
+    for folder, check in SNAPSHOT_CHECKS.items():
+        snapshots = sorted((data_dir / folder).glob("*.json"))
+        for path in snapshots:
+            errors.extend(check(path))
+        counts[folder] = len(snapshots)
     if counts[".json"] == 0:
         errors.append("aucun plan JSON dans donnees/")
     summary = ", ".join(f"{suffix} {count}" for suffix, count in counts.items())
