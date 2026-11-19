@@ -123,6 +123,14 @@ Dans un conteneur, Ollama tourne sur la machine hôte : ajouter `-e OLLAMA_BASE_
 
 Sur `/metrics`, `ilv_http_errors_total` compte les erreurs du service (codes 5xx, y compris une exception non gérée, renvoyée en 500 avec un message générique et journalisée avec son type) ; `ilv_http_client_errors_total` compte à part les requêtes refusées (codes 4xx : jeton absent ou faux, saisie invalide, route inconnue comme `/favicon.ico` demandée par un navigateur). Pour le modèle : `ilv_chat_requests_total` (questions), `ilv_chat_fallback_total` (réponses données sans le modèle) et `ilv_llm_duration_seconds_sum` (durée cumulée de génération). Le journal ajoute pour chaque question une ligne `chat`, avec le même identifiant que la ligne HTTP, le modèle, `used_model`, le nombre de sources et les durées, sans le texte de la question.
 
+## Environnement de recette
+
+L'image publiée sur GitHub Container Registry tourne aussi chez un hébergeur, Render (offre gratuite), comme environnement de recette : une adresse publique, hors de toute machine de développement, avec la même image que celle livrée. L'image écoute sur le port donné par la variable `PORT` (8000 par défaut), comme l'attendent les hébergeurs. Les jetons `ADMIN_API_KEY` et `CHAT_API_KEY` sont définis dans les paramètres du service, jamais dans le dépôt.
+
+À chaque livraison sur `main`, le dernier pas du job `livraison` appelle le crochet de déploiement de Render, rangé dans le secret `RENDER_DEPLOY_HOOK` du dépôt : Render récupère alors la nouvelle image. Sans ce secret, le pas est ignoré. Un redéploiement peut aussi être lancé à la main (onglet *Actions*, *Run workflow* sur `main`).
+
+Le modèle de langage n'est pas hébergé en recette (il demande Ollama et plusieurs gigaoctets de mémoire) : `/api/chat` y répond avec les extraits seuls (`used_model: false`), ce que compte `ilv_chat_fallback_total`. L'instance gratuite se met en veille après un moment sans visite : la première requête qui suit prend alors une minute environ.
+
 ## Supervision : Prometheus, alertes et Grafana
 
 Le dossier `supervision/` lance l'API, Prometheus et Grafana en conteneurs, d'une seule commande. Les jetons et le mot de passe de Grafana sont lus dans l'environnement : aucune valeur par défaut n'est écrite dans le dépôt.
@@ -183,9 +191,9 @@ La dernière commande pose les treize questions de `tests/questions_reference.js
 
 ## Chaîne d'intégration et de livraison continues
 
-Le fichier `.github/workflows/ci-cd.yml` est lu par GitHub Actions. Aucun secret n'est à créer : la publication utilise le jeton `GITHUB_TOKEN` fourni par GitHub.
+Le fichier `.github/workflows/ci-cd.yml` est lu par GitHub Actions. La publication utilise le jeton `GITHUB_TOKEN` fourni par GitHub ; le seul secret à créer, facultatif, est `RENDER_DEPLOY_HOOK` (environnement de recette).
 
-**Déclencheurs** : envoi sur `main`, pull request vers `main`, lancement manuel (onglet *Actions*, *Run workflow*).
+**Déclencheurs** : envoi sur `main`, pull request vers `main`, lancement manuel (onglet *Actions*, *Run workflow*). La livraison ne s'exécute que sur `main`, après un envoi ou un lancement manuel.
 
 | Job | Dépend de | Ce qu'il fait | Échoue si |
 |---|---|---|---|
@@ -195,7 +203,7 @@ Le fichier `.github/workflows/ci-cd.yml` est lu par GitHub Actions. Aucun secret
 | `tests` | `qualite`, `donnees`, `supervision` | Lancement de la base de maintenance dans un conteneur PostgreSQL, puis tests unitaires et d'intégration (dont les vraies requêtes SQL sur cette base), mesure de couverture ; rapport HTML publié en artefact | la base ne démarre pas, un test échoue ou la couverture est sous 85 % |
 | `evaluation` | `tests` | Questions de référence posées à la recherche ; rapport JSON publié en artefact | un seuil n'est pas atteint |
 | `validation_modele` | `evaluation` | Ollama 0.40.16 dans un conteneur de service, téléchargement du modèle, questions de référence posées au modèle ; rapport JSON publié en artefact | un seuil n'est pas atteint |
-| `livraison` | `tests`, `evaluation`, `validation_modele` | Seulement sur un envoi vers `main` : construction de l'image, publication sur GitHub Container Registry (étiquettes `<sha>` et `latest`), lancement de l'image publiée et appel de `/health` | la construction, la publication ou le contrôle de santé échoue |
+| `livraison` | `tests`, `evaluation`, `validation_modele` | Seulement sur `main` (envoi ou lancement manuel) : construction de l'image, publication sur GitHub Container Registry (étiquettes `<sha>` et `latest`), lancement de l'image publiée et appel de `/health`, puis demande de déploiement à l'environnement de recette si le secret `RENDER_DEPLOY_HOOK` existe | la construction, la publication, le contrôle de santé ou la demande de déploiement échoue |
 
 **Installer la chaîne** : créer le dépôt sur GitHub et y envoyer ce contenu ; GitHub Actions détecte le workflow sans autre configuration. Les artefacts sont téléchargeables sur la page de chaque exécution.
 
@@ -218,7 +226,7 @@ Les données sont techniques : plans, documents et base de maintenance fictifs, 
 
 ## Limites
 
-- La chaîne livre une image dans un registre ; aucun serveur de recette n'est déployé.
+- L'environnement de recette est une instance gratuite, sans le modèle de langage ; il n'y a pas d'environnement de production.
 - La recherche est lexicale : elle ne comprend ni les synonymes ni les accents, et des textes longs qui répètent des mots courts peuvent passer devant le bon document (question Q02 depuis l'ajout des interventions).
 - Le modèle tourne sur processeur : quelques secondes par réponse sur un poste, davantage sur les machines de GitHub. La validation porte sur treize questions, ce qui reste un petit échantillon.
 - Les extractions (API, base, big data, pages web) se lancent à la main ; leurs instantanés sont versionnés et contrôlés par la chaîne, mais aucune collecte n'est planifiée.
