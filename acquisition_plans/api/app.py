@@ -1,12 +1,13 @@
 """REST routes to read the collected plan data, search it and monitor the service."""
 
+import logging
 import os
 from pathlib import Path
 import time
 import uuid
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 
 from ..collecte.sources import PlanCollector
@@ -18,6 +19,8 @@ PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_DATA_DIR = PACKAGE_ROOT / "donnees"
 DEFAULT_DB_PATH = PACKAGE_ROOT / "donnees" / "acquisition_plans.sqlite3"
 DEFAULT_LOG_PATH = PACKAGE_ROOT / "donnees" / "service.log.jsonl"
+
+logger = logging.getLogger("acquisition_plans.api")
 
 
 class SearchRequest(BaseModel):
@@ -68,7 +71,16 @@ def create_app(
     async def track_requests(request: Request, call_next):
         start = time.perf_counter()
         request_id = uuid.uuid4().hex[:12]
-        response = await call_next(request)
+        fields: dict[str, str] = {}
+        try:
+            response = await call_next(request)
+        except Exception as error:
+            # An unhandled error must still be counted and logged as a 500.
+            logger.exception("Erreur non gérée, requête %s", request_id)
+            fields["error"] = type(error).__name__
+            response = JSONResponse(
+                status_code=500, content={"detail": "Erreur interne du service."}
+            )
         duration = round(time.perf_counter() - start, 4)
         metrics.record_http(response.status_code, duration)
         write_json_log(
@@ -79,6 +91,7 @@ def create_app(
             path=request.url.path,
             status_code=response.status_code,
             duration_seconds=duration,
+            **fields,
         )
         return response
 
