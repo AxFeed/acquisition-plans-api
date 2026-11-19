@@ -28,12 +28,15 @@ def write_json_log(
 
 @dataclass
 class MetricsRecorder:
-    """In-memory HTTP counters and durations exported on GET /metrics."""
+    """In-memory HTTP and model counters and durations exported on GET /metrics."""
 
     http_requests_total: int = 0
     http_errors_total: int = 0
     http_client_errors_total: int = 0
     http_duration_seconds_sum: float = 0.0
+    chat_requests_total: int = 0
+    chat_fallback_total: int = 0
+    llm_duration_seconds_sum: float = 0.0
 
     def record_http(self, status_code: int, duration: float) -> None:
         """Count server errors (5xx) apart from refused requests (4xx)."""
@@ -44,6 +47,15 @@ class MetricsRecorder:
             self.http_client_errors_total += 1
         self.http_duration_seconds_sum = round(
             self.http_duration_seconds_sum + duration, 6
+        )
+
+    def record_chat(self, fallback: bool, llm_seconds: float) -> None:
+        """Count each question, and apart those the model could not answer."""
+        self.chat_requests_total += 1
+        if fallback:
+            self.chat_fallback_total += 1
+        self.llm_duration_seconds_sum = round(
+            self.llm_duration_seconds_sum + llm_seconds, 6
         )
 
     def render_prometheus(self) -> str:
@@ -60,5 +72,14 @@ class MetricsRecorder:
             "# HELP ilv_http_request_duration_seconds_sum Cumulative HTTP latency.",
             "# TYPE ilv_http_request_duration_seconds_sum counter",
             f"ilv_http_request_duration_seconds_sum {self.http_duration_seconds_sum}",
+            "# HELP ilv_chat_requests_total Total questions asked to the assistant.",
+            "# TYPE ilv_chat_requests_total counter",
+            f"ilv_chat_requests_total {self.chat_requests_total}",
+            "# HELP ilv_chat_fallback_total Answers given without the model.",
+            "# TYPE ilv_chat_fallback_total counter",
+            f"ilv_chat_fallback_total {self.chat_fallback_total}",
+            "# HELP ilv_llm_duration_seconds_sum Cumulative model generation time.",
+            "# TYPE ilv_llm_duration_seconds_sum counter",
+            f"ilv_llm_duration_seconds_sum {self.llm_duration_seconds_sum}",
         ]
         return "\n".join(lines) + "\n"
