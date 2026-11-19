@@ -11,9 +11,11 @@ COPY --chown=appuser:appuser acquisition_plans /app/acquisition_plans
 
 USER appuser
 
+# Port d'écoute : 8000 par défaut ; un hébergeur peut en imposer un autre par PORT.
+ENV PORT=8000
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"
+  CMD python -c "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:' + os.environ['PORT'] + '/health', timeout=3)"
 
-CMD ["uvicorn", "acquisition_plans.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "exec uvicorn acquisition_plans.api.app:app --host 0.0.0.0 --port \"$PORT\""]
