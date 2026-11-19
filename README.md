@@ -2,7 +2,7 @@
 
 API REST qui met à disposition les données de plans techniques ferroviaires : objets des plans, nomenclature des équipements, guide des symboles, bulletins de maintenance et liste des gares de voyageurs. Les cinq sources (fichiers JSON et CSV, page HTML, flux RSS, API REST publique) sont collectées, contrôlées, nettoyées et stockées dans SQLite, puis exposées par une API FastAPI, avec une recherche par mots-clés et des routes d'administration protégées par jeton.
 
-Le dépôt sert surtout à démontrer une chaîne d'intégration continue avec GitHub Actions ; la livraison de l'image Docker est l'étape suivante.
+Le dépôt sert surtout à démontrer une chaîne d'intégration et de livraison continues avec GitHub Actions.
 
 ## Origine et périmètre
 
@@ -19,7 +19,8 @@ acquisition_plans/
 ├── surveillance/  métriques HTTP au format Prometheus et journal JSON
 ├── donnees/       données fictives de démonstration
 └── tests/         contrôle des données, tests automatisés et évaluation de la recherche
-.github/workflows/ci-cd.yml   chaîne d'intégration continue
+.github/workflows/ci-cd.yml   chaîne d'intégration et de livraison continues
+Dockerfile                    image de l'application
 ```
 
 ## Installation
@@ -77,9 +78,9 @@ python -B -m acquisition_plans.tests.evaluer_recherche
 
 La dernière commande pose les neuf questions de `tests/questions_reference.json` à la recherche. Elle vérifie que la source attendue figure dans les quatre premiers résultats (taux minimal 87,5 %), que le rang réciproque moyen atteint 0,6 et qu'aucun résultat ne dépasse un score de 0,5 pour la question hors corpus ; elle écrit `tests/rapport_evaluation_recherche.json`.
 
-## Chaîne d'intégration continue
+## Chaîne d'intégration et de livraison continues
 
-Le fichier `.github/workflows/ci-cd.yml` est lu par GitHub Actions. Aucun secret n'est à créer.
+Le fichier `.github/workflows/ci-cd.yml` est lu par GitHub Actions. Aucun secret n'est à créer : la publication utilise le jeton `GITHUB_TOKEN` fourni par GitHub.
 
 **Déclencheurs** : envoi sur `main`, pull request vers `main`, lancement manuel (onglet *Actions*, *Run workflow*).
 
@@ -89,15 +90,22 @@ Le fichier `.github/workflows/ci-cd.yml` est lu par GitHub Actions. Aucun secret
 | `donnees` | — | Contrôle des fichiers de `donnees/` : plans JSON (champs, positions, identifiants uniques), colonnes du CSV, articles du guide HTML, bulletins RSS, instantanés de l'API | une donnée source est invalide |
 | `tests` | `qualite`, `donnees` | Tests unitaires et d'intégration, mesure de couverture ; rapport HTML publié en artefact | un test échoue ou la couverture est sous 85 % |
 | `evaluation` | `tests` | Questions de référence posées à la recherche ; rapport JSON publié en artefact | un seuil n'est pas atteint |
-
+| `livraison` | `tests`, `evaluation` | Seulement sur un envoi vers `main` : construction de l'image, publication sur GitHub Container Registry (étiquettes `<sha>` et `latest`), lancement de l'image publiée et appel de `/health` | la construction, la publication ou le contrôle de santé échoue |
 
 **Installer la chaîne** : créer le dépôt sur GitHub et y envoyer ce contenu ; GitHub Actions détecte le workflow sans autre configuration. Les artefacts sont téléchargeables sur la page de chaque exécution.
 
 **Tester la chaîne** :
 
-1. Envoyer un commit sur une branche et ouvrir une pull request vers `main` : `qualite`, `donnees`, `tests` et `evaluation` s'exécutent.
-2. Fusionner la pull request : les mêmes jobs s'exécutent sur `main`.
+1. Envoyer un commit sur une branche et ouvrir une pull request vers `main` : `qualite`, `donnees`, `tests` et `evaluation` s'exécutent, la livraison est ignorée.
+2. Fusionner la pull request : les cinq jobs s'exécutent et l'image apparaît dans l'onglet *Packages* du compte.
 3. Vérifier un échec volontaire : sur une branche, supprimer la colonne `description` de `donnees/nomenclature_equipements.csv` ; le job `donnees` échoue et bloque les tests.
+
+**Récupérer l'image livrée** (le paquet doit être rendu public dans ses paramètres, *Package settings*, *Change visibility*, sinon un `docker login ghcr.io` est nécessaire) :
+
+```powershell
+docker pull ghcr.io/<compte>/acquisition-plans-api:latest
+docker run -d --name acq-plans-api -p 8000:8000 -e ADMIN_API_KEY=<jeton> ghcr.io/<compte>/acquisition-plans-api:latest
+```
 
 ## Données personnelles
 
@@ -105,6 +113,6 @@ Les données sont techniques : plans et documents fictifs, liste publique des ga
 
 ## Limites
 
-- La chaîne ne construit pas encore d'image Docker et ne livre rien.
+- La chaîne livre une image dans un registre ; aucun serveur de recette n'est déployé.
 - La recherche est lexicale : elle ne comprend ni les synonymes ni les accents.
 - Le lecteur ILV et les plans réels ne sont pas dans ce dépôt.
