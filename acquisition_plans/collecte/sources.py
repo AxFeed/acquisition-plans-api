@@ -1,4 +1,6 @@
-"""Collect plan exports (JSON), CSV nomenclature, HTML guide and RSS maintenance notes.
+"""Collect plan exports (JSON), CSV nomenclature, HTML guide and RSS maintenance notes,
+then the snapshots saved by the extraction scripts (REST API, PostgreSQL database,
+big data with DuckDB).
 
 The plans are JSON exports of fictitious ILV plans. The ILV reader that produced them
 belongs to the company project and is not part of this repository.
@@ -287,10 +289,78 @@ class PlanCollector:
         )
         return self.database.save_document(stored_doc, self._build_chunks(sentences))
 
+    def ingest_database_snapshot(self, json_path: str | Path) -> int:
+        """Store the interventions saved by ``collecte.base_de_donnees``."""
+        path = Path(json_path)
+        raw_text = path.read_text(encoding="utf-8")
+        snapshot = json.loads(raw_text)
+        sentences = [
+            f"Intervention du {row['date_intervention']} sur {row['equipement']} "
+            f"({row['libelle']}, {row['secteur']}) : maintenance {row['nature']} "
+            f"realisee par {row['equipe']} en {row['duree_minutes']} min. "
+            f"{row['compte_rendu']}"
+            for row in snapshot["interventions"]
+        ]
+        sentences.extend(
+            f"Suivi de maintenance de {row['equipement']} ({row['libelle']}) : "
+            f"{row['realisees']} intervention(s) realisee(s), derniere le "
+            f"{row['derniere'] or 'jamais'}, {row['planifiees']} planifiee(s)."
+            for row in snapshot["synthese"]
+        )
+        stored_doc = StoredDocument(
+            title=path.stem,
+            source_type="base_de_donnees",
+            source_path=snapshot.get("serveur") or path.name,
+            document_hash=compute_text_hash(raw_text),
+            sector="maintenance",
+        )
+        return self.database.save_document(stored_doc, self._build_chunks(sentences))
+
+    def ingest_big_data_snapshot(self, json_path: str | Path) -> int:
+        """Store the per-line statistics saved by ``collecte.big_data``."""
+        path = Path(json_path)
+        raw_text = path.read_text(encoding="utf-8")
+        snapshot = json.loads(raw_text)
+        totals = snapshot["totaux"]
+        rows = snapshot["enregistrements"]
+        ranking = ", ".join(
+            f"{rank}. ligne {row['code_ligne']} ({row['circuits']})"
+            for rank, row in enumerate(rows, start=1)
+        )
+        sentences = [
+            "Circuits de voie du reseau ferre national (open data SNCF Reseau) : "
+            f"{totals['circuits']} circuits de voie sur {totals['lignes']} lignes "
+            f"et {totals['voies']} voies.",
+            f"Classement des lignes par nombre de circuits de voie : {ranking}.",
+        ]
+        sentences.extend(
+            f"Circuits de voie de la ligne {row['code_ligne']} "
+            f"({row.get('nom_ligne') or 'nom non renseigne'}) : {row['circuits']} "
+            f"circuits sur {row['voies']} voies ; cantonnement : "
+            f"{row.get('cantonnement') or 'non renseigne'}."
+            for row in rows
+        )
+        stored_doc = StoredDocument(
+            title=snapshot.get("jeu_de_donnees") or path.stem,
+            source_type="big_data",
+            source_path=", ".join(snapshot.get("urls") or []) or path.name,
+            document_hash=compute_text_hash(raw_text),
+            sector="national",
+        )
+        return self.database.save_document(stored_doc, self._build_chunks(sentences))
+
     def ingest_directory(self, data_dir: str | Path) -> dict[str, int]:
         """Ingest all supported files from a data directory."""
         folder = Path(data_dir)
-        counts = {"ilv": 0, "csv": 0, "html_scraping": 0, "rss": 0, "api_rest": 0}
+        counts = {
+            "ilv": 0,
+            "csv": 0,
+            "html_scraping": 0,
+            "rss": 0,
+            "api_rest": 0,
+            "base_de_donnees": 0,
+            "big_data": 0,
+        }
         for plan_path in sorted(folder.glob("*.json")):
             self.ingest_plan_export(plan_path)
             counts["ilv"] += 1
@@ -306,4 +376,10 @@ class PlanCollector:
         for snapshot_path in sorted((folder / "api").glob("*.json")):
             self.ingest_api_snapshot(snapshot_path)
             counts["api_rest"] += 1
+        for snapshot_path in sorted((folder / "base").glob("*.json")):
+            self.ingest_database_snapshot(snapshot_path)
+            counts["base_de_donnees"] += 1
+        for snapshot_path in sorted((folder / "big_data").glob("*.json")):
+            self.ingest_big_data_snapshot(snapshot_path)
+            counts["big_data"] += 1
         return counts

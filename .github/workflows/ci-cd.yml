@@ -61,7 +61,25 @@ jobs:
           cache: pip
       - name: Installation des dépendances
         run: python -m pip install -r requirements-dev.txt
+      - name: Base de maintenance PostgreSQL (conteneur de test)
+        run: |
+          docker run -d --name base-maintenance -p 5433:5432 \
+            -e POSTGRES_DB=maintenance -e POSTGRES_USER=lecteur \
+            -e POSTGRES_PASSWORD=essai-ci \
+            -v "$PWD/acquisition_plans/donnees/base_maintenance:/docker-entrypoint-initdb.d:ro" \
+            postgres:17-alpine
+          for essai in $(seq 1 30); do
+            if docker exec base-maintenance psql -U lecteur -d maintenance -h 127.0.0.1 \
+                 -tAc "SELECT count(*) FROM interventions"; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs base-maintenance
+          exit 1
       - name: Tests unitaires et d'intégration, avec mesure de couverture
+        env:
+          MAINTENANCE_DB_URL: postgresql://lecteur:essai-ci@127.0.0.1:5433/maintenance
         run: >-
           python -B -m coverage run --source=acquisition_plans --omit="*/tests/*"
           -m unittest discover -s acquisition_plans/tests -p "test_*.py" -v

@@ -1,4 +1,4 @@
-"""Tests of the collection of the four sources and of the SQLite storage."""
+"""Tests of the collection of the sources and of the SQLite storage."""
 
 import json
 from pathlib import Path
@@ -13,7 +13,15 @@ from acquisition_plans.collecte.sources import (
 from acquisition_plans.stockage.database import PlanDatabase
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "donnees"
-API_SNAPSHOTS = len(list((DATA_DIR / "api").glob("*.json")))
+# Snapshots written by the extraction scripts, by folder and by source type.
+SNAPSHOTS = {
+    source_type: len(list((DATA_DIR / folder).glob("*.json")))
+    for folder, source_type in (
+        ("api", "api_rest"),
+        ("base", "base_de_donnees"),
+        ("big_data", "big_data"),
+    )
+}
 
 
 class CollectionAndStorageTests(unittest.TestCase):
@@ -35,20 +43,14 @@ class CollectionAndStorageTests(unittest.TestCase):
         self.assertGreater(len(chunks), 2)
         self.assertTrue(all(len(chunk) <= 120 for chunk in chunks))
 
-    def test_directory_collection_covers_the_four_sources(self) -> None:
+    def test_directory_collection_covers_every_source(self) -> None:
         counts = self.collector.ingest_directory(DATA_DIR)
         self.assertEqual(
             counts,
-            {
-                "ilv": 3,
-                "csv": 1,
-                "html_scraping": 1,
-                "rss": 1,
-                "api_rest": API_SNAPSHOTS,
-            },
+            {"ilv": 3, "csv": 1, "html_scraping": 1, "rss": 1, **SNAPSHOTS},
         )
         integrity = self.database.check_integrity()
-        self.assertEqual(integrity["documents"], 6 + API_SNAPSHOTS)
+        self.assertEqual(integrity["documents"], 6 + sum(SNAPSHOTS.values()))
         self.assertEqual(integrity["plan_objects"], 16)
         self.assertEqual(integrity["orphan_chunks"], 0)
         self.assertGreater(integrity["chunks"], 10)
@@ -73,8 +75,7 @@ class CollectionAndStorageTests(unittest.TestCase):
             for row in self.database.get_sources_summary()
         }
         expected = {"csv": 1, "html_scraping": 1, "ilv": 3, "rss": 1}
-        if API_SNAPSHOTS:
-            expected["api_rest"] = API_SNAPSHOTS
+        expected.update({name: count for name, count in SNAPSHOTS.items() if count})
         self.assertEqual(by_type, expected)
         plan = " ".join(self.database.explain_type_code_query("EQUIP_A"))
         self.assertIn("idx_plan_objects_type_code", plan)
@@ -98,6 +99,70 @@ class CollectionAndStorageTests(unittest.TestCase):
         contents = [chunk["content"] for chunk in self.database.list_chunks()]
         self.assertIn("position.lat = 43.6", contents[0])
         self.assertNotIn("vide", contents[1])
+
+    def test_database_snapshot_becomes_sentences(self) -> None:
+        snapshot = {
+            "serveur": "127.0.0.1:5433/maintenance",
+            "interventions": [
+                {
+                    "equipement": "SIGNAL_B#204",
+                    "libelle": "Signal arret Nord",
+                    "secteur": "Secteur Nord",
+                    "date_intervention": "2026-09-22",
+                    "nature": "corrective",
+                    "equipe": "Equipe Nord",
+                    "duree_minutes": 90,
+                    "compte_rendu": "Lampe remplacee.",
+                }
+            ],
+            "synthese": [
+                {
+                    "equipement": "CAPTEUR_C#305",
+                    "libelle": "Detecteur passage Sud",
+                    "realisees": 0,
+                    "planifiees": 1,
+                    "derniere": None,
+                }
+            ],
+        }
+        path = Path(self.temp_dir.name) / "interventions-test.json"
+        path.write_text(json.dumps(snapshot), encoding="utf-8")
+        self.collector.ingest_database_snapshot(path)
+        contents = [chunk["content"] for chunk in self.database.list_chunks()]
+        self.assertEqual(len(contents), 2)
+        self.assertTrue(contents[0].startswith("Intervention du 2026-09-22 sur S"))
+        self.assertIn("maintenance corrective realisee", contents[0])
+        self.assertIn("derniere le jamais, 1 planifiee(s)", contents[1])
+        self.assertEqual(
+            self.database.get_sources_summary(),
+            [{"source": "base_de_donnees", "documents": 1, "chunks": 2}],
+        )
+
+    def test_big_data_snapshot_becomes_sentences(self) -> None:
+        snapshot = {
+            "jeu_de_donnees": "circuits-test",
+            "urls": ["https://exemple.invalid/export"],
+            "totaux": {"circuits": 9, "lignes": 2, "voies": 3},
+            "enregistrements": [
+                {
+                    "code_ligne": "830000",
+                    "nom_ligne": "Ligne A",
+                    "cantonnement": "BAL",
+                    "circuits": 7,
+                    "voies": 2,
+                },
+                {"code_ligne": "570000", "circuits": 2, "voies": 1},
+            ],
+        }
+        path = Path(self.temp_dir.name) / "circuits.json"
+        path.write_text(json.dumps(snapshot), encoding="utf-8")
+        self.collector.ingest_big_data_snapshot(path)
+        contents = [chunk["content"] for chunk in self.database.list_chunks()]
+        self.assertIn("9 circuits de voie sur 2 lignes et 3 voies", contents[0])
+        self.assertIn("1. ligne 830000 (7), 2. ligne 570000 (2)", contents[1])
+        self.assertIn("cantonnement : BAL", contents[2])
+        self.assertIn("(nom non renseigne)", contents[3])
+        self.assertEqual(self.database.list_chunks()[0]["title"], "circuits-test")
 
 
 if __name__ == "__main__":

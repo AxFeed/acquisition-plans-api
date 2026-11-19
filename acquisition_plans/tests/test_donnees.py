@@ -10,6 +10,8 @@ import unittest
 from acquisition_plans.tests.valider_donnees import (
     DATA_DIR,
     check_api_snapshot,
+    check_big_data_snapshot,
+    check_database_snapshot,
     check_plan,
     main,
 )
@@ -61,6 +63,56 @@ class DataValidationTests(unittest.TestCase):
                 "utf-8",
             )
             self.assertEqual(check_api_snapshot(path), [])
+
+    def test_database_snapshot_rules(self) -> None:
+        row = {
+            "equipement": "EQUIP_A#101",
+            "date_intervention": "2026-10-15",
+            "nature": "preventive",
+            "compte_rendu": "Controle.",
+        }
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "interventions.json"
+            path.write_text("{", "utf-8")
+            self.assertIn("JSON invalide", check_database_snapshot(path)[0])
+            path.write_text(json.dumps({"interventions": []}), "utf-8")
+            self.assertIn("aucune intervention", check_database_snapshot(path)[0])
+            path.write_text(json.dumps({"interventions": [row]}), "utf-8")
+            self.assertIn("synthèse", check_database_snapshot(path)[0])
+            broken = {key: value for key, value in row.items() if key != "nature"}
+            path.write_text(
+                json.dumps({"interventions": [row, broken], "synthese": []}), "utf-8"
+            )
+            self.assertEqual(len(check_database_snapshot(path)), 1)
+            path.write_text(
+                json.dumps({"interventions": [row], "synthese": []}), "utf-8"
+            )
+            self.assertEqual(check_database_snapshot(path), [])
+
+    def test_big_data_snapshot_rules(self) -> None:
+        totals = {"circuits": 10, "lignes": 2, "voies": 3}
+        line = {"code_ligne": "830000", "circuits": 6, "voies": 2}
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "circuits.json"
+            path.write_text("[", "utf-8")
+            self.assertIn("JSON invalide", check_big_data_snapshot(path)[0])
+            path.write_text(json.dumps({"totaux": {"circuits": 0}}), "utf-8")
+            self.assertIn("totaux", check_big_data_snapshot(path)[0])
+            path.write_text(json.dumps({"totaux": totals}), "utf-8")
+            self.assertIn("aucune ligne", check_big_data_snapshot(path)[0])
+            path.write_text(
+                json.dumps({"totaux": totals, "enregistrements": [line, {}]}), "utf-8"
+            )
+            self.assertIn("invalides", check_big_data_snapshot(path)[0])
+            path.write_text(
+                json.dumps({"totaux": totals, "enregistrements": [line, line]}),
+                "utf-8",
+            )
+            self.assertIn("total", check_big_data_snapshot(path)[0])
+            path.write_text(
+                json.dumps({"totaux": totals, "enregistrements": [line]}), "utf-8"
+            )
+            self.assertEqual(check_big_data_snapshot(path), [])
 
 
 if __name__ == "__main__":

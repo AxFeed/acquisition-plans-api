@@ -61,5 +61,26 @@
     "question": "Quelle est la vitesse maximale d un TGV sur la ligne Atlantique ?",
     "expected_keywords": ["ne trouve pas", "plans indexes"],
     "expected_source": null
+  },
+  {
+    "id": "Q10",
+    "category": "base_de_donnees",
+    "question": "Quelle intervention corrective a ete realisee sur le signal SIGNAL_B#204 ?",
+    "expected_keywords": ["lampe"],
+    "expected_source": "interventions-maintenance"
+  },
+  {
+    "id": "Q11",
+    "category": "big_data",
+    "question": "Quelle ligne compte le plus de circuits de voie ?",
+    "expected_keywords": ["830000"],
+    "expected_source": "circuits-de-voie-par-ligne"
+  },
+  {
+    "id": "Q12",
+    "category": "api_rest",
+    "question": "Quel est le code UIC de la gare de Walbourg ?",
+    "expected_keywords": ["87213405"],
+    "expected_source": "gares-de-voyageurs"
   }
 ]
