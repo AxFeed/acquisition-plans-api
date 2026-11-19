@@ -19,6 +19,9 @@ SNAPSHOT_COUNTS = [
 DOCUMENTS = 6 + sum(SNAPSHOT_COUNTS)
 SOURCE_TYPES = 4 + sum(1 for count in SNAPSHOT_COUNTS if count)
 ADMIN_TOKEN = "jeton-de-test"
+USER_TOKEN = "jeton-utilisateur-de-test"
+USER_HEADERS = {"Authorization": f"Bearer {USER_TOKEN}"}
+QUESTION = {"question": "Ou se trouve le sectionneur EQUIP_A#101 de Jean Dupont ?"}
 
 
 def call_asgi(app, method, path, payload=None, headers=None) -> tuple[int, str]:
@@ -133,6 +136,66 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(entries[-1]["path"], "/api/search")
         self.assertEqual(entries[-1]["status_code"], 200)
         self.assertNotIn("Dupont", self.log_path.read_text())
+
+    def test_chat_requires_the_user_token(self) -> None:
+        with patch.dict(os.environ, {"CHAT_API_KEY": USER_TOKEN}):
+            status, _ = call_asgi(self.app, "POST", "/api/chat", QUESTION)
+            self.assertEqual(status, 401)
+            wrong = {"Authorization": "Bearer faux"}
+            status, _ = call_asgi(self.app, "POST", "/api/chat", QUESTION, wrong)
+            self.assertEqual(status, 403)
+            too_short = {"question": "x"}
+            status, _ = call_asgi(
+                self.app, "POST", "/api/chat", too_short, USER_HEADERS
+            )
+            self.assertEqual(status, 422)
+        with patch.dict(os.environ, {"CHAT_API_KEY": ""}):
+            status, _ = call_asgi(self.app, "POST", "/api/chat", QUESTION, USER_HEADERS)
+        self.assertEqual(status, 401)
+
+    def test_chat_answers_counts_fallbacks_and_logs_without_the_question(self) -> None:
+        answers = [
+            {
+                "answer": "Le sectionneur est en (140, 280) [1].",
+                "sources": [{"title": "secteur_nord_1"}],
+                "model": "modele-test",
+                "used_model": True,
+                "search_seconds": 0.002,
+                "llm_seconds": 2.5,
+            },
+            {
+                "answer": "Synthese des extraits (modele indisponible) : ...",
+                "sources": [{"title": "secteur_nord_1"}],
+                "model": "modele-test",
+                "used_model": False,
+                "search_seconds": 0.002,
+                "llm_seconds": 0.01,
+                "model_error": "Ollama injoignable : connexion refusée",
+            },
+        ]
+        with (
+            patch.dict(os.environ, {"CHAT_API_KEY": USER_TOKEN}),
+            patch("acquisition_plans.api.app.ask", side_effect=answers),
+        ):
+            status, body = call_asgi(
+                self.app, "POST", "/api/chat", QUESTION, USER_HEADERS
+            )
+            call_asgi(self.app, "POST", "/api/chat", QUESTION, USER_HEADERS)
+        self.assertEqual(status, 200)
+        reply = json.loads(body)
+        self.assertTrue(reply["used_model"])
+        self.assertNotIn("model_error", reply)
+        _, metrics = call_asgi(self.app, "GET", "/metrics")
+        self.assertIn("ilv_chat_requests_total 2", metrics)
+        self.assertIn("ilv_chat_fallback_total 1", metrics)
+        self.assertIn("ilv_llm_duration_seconds_sum 2.51", metrics)
+        log_text = self.log_path.read_text(encoding="utf-8")
+        self.assertNotIn("Dupont", log_text)
+        entries = [json.loads(line) for line in log_text.splitlines()]
+        chat, http = entries[0], entries[1]
+        self.assertEqual((chat["event"], http["event"]), ("chat", "http_request"))
+        self.assertEqual(chat["request_id"], http["request_id"])
+        self.assertEqual(entries[2]["model_error"], answers[1]["model_error"])
 
 
 if __name__ == "__main__":

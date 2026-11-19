@@ -1,16 +1,21 @@
-"""REST routes to read the collected plan data, search it and monitor the service."""
+"""REST routes to read the collected plan data, search it, ask the language model
+and monitor the service."""
 
+import hmac
 import logging
 import os
 from pathlib import Path
 import time
+from typing import Annotated
 import uuid
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
 
 from ..collecte.sources import PlanCollector
+from ..generation.assistant import DEFAULT_MODEL, DEFAULT_OLLAMA_URL, ask
 from ..recherche.lexicale import search_chunks
 from ..stockage.database import PlanDatabase
 from ..surveillance.metrics import MetricsRecorder, write_json_log
@@ -21,6 +26,10 @@ DEFAULT_DB_PATH = PACKAGE_ROOT / "donnees" / "acquisition_plans.sqlite3"
 DEFAULT_LOG_PATH = PACKAGE_ROOT / "donnees" / "service.log.jsonl"
 
 logger = logging.getLogger("acquisition_plans.api")
+user_bearer = HTTPBearer(
+    auto_error=False,
+    description="Jeton des utilisateurs de l'assistant (variable CHAT_API_KEY).",
+)
 
 
 class SearchRequest(BaseModel):
@@ -28,6 +37,17 @@ class SearchRequest(BaseModel):
 
     query: str = Field(..., min_length=2, max_length=300)
     top_k: int = Field(default=4, ge=1, le=10)
+
+
+class ChatRequest(BaseModel):
+    """Question asked to the language model."""
+
+    question: str = Field(..., min_length=2, max_length=500)
+
+
+def same_token(given: str, expected: str) -> bool:
+    """Compare two tokens in constant time."""
+    return hmac.compare_digest(given.encode("utf-8"), expected.encode("utf-8"))
 
 
 def create_app(
@@ -40,6 +60,9 @@ def create_app(
     resolved_data = Path(data_dir or os.getenv("ILV_DATA_DIR", DEFAULT_DATA_DIR))
     resolved_log = Path(log_path or os.getenv("ILV_LOG_PATH", DEFAULT_LOG_PATH))
 
+    ollama_url = os.getenv("OLLAMA_BASE_URL", DEFAULT_OLLAMA_URL)
+    chat_model = os.getenv("OLLAMA_CHAT_MODEL", DEFAULT_MODEL)
+
     database = PlanDatabase(resolved_db)
     collector = PlanCollector(database=database)
     metrics = MetricsRecorder()
@@ -51,7 +74,8 @@ def create_app(
         title="API des plans d'acquisition",
         description=(
             "Consultation des plans et des documents collectés, recherche par "
-            "mots-clés et administration de la collecte."
+            "mots-clés, questions au modèle de langage et administration de la "
+            "collecte."
         ),
         version="1.0.0",
     )
@@ -62,15 +86,31 @@ def create_app(
         expected = os.getenv("ADMIN_API_KEY", "").strip()
         if not expected or x_admin_token is None:
             raise HTTPException(status_code=401, detail="Jeton administrateur absent.")
-        if x_admin_token != expected:
+        if not same_token(x_admin_token, expected):
             raise HTTPException(
                 status_code=403, detail="Jeton administrateur invalide."
             )
+
+    def require_user(
+        credentials: Annotated[
+            HTTPAuthorizationCredentials | None, Depends(user_bearer)
+        ],
+    ) -> None:
+        expected = os.getenv("CHAT_API_KEY", "").strip()
+        if not expected or credentials is None:
+            raise HTTPException(
+                status_code=401,
+                detail="Jeton utilisateur absent.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        if not same_token(credentials.credentials, expected):
+            raise HTTPException(status_code=403, detail="Jeton utilisateur invalide.")
 
     @app.middleware("http")
     async def track_requests(request: Request, call_next):
         start = time.perf_counter()
         request_id = uuid.uuid4().hex[:12]
+        request.state.request_id = request_id
         fields: dict[str, str] = {}
         try:
             response = await call_next(request)
@@ -116,6 +156,34 @@ def create_app(
     def search(payload: SearchRequest) -> dict:
         results = search_chunks(database, payload.query, top_k=payload.top_k)
         return {"query": payload.query, "count": len(results), "results": results}
+
+    @app.post("/api/chat", dependencies=[Depends(require_user)], tags=["Assistant"])
+    def chat(payload: ChatRequest, request: Request) -> dict:
+        result = ask(database, payload.question, base_url=ollama_url, model=chat_model)
+        fallback = "model_error" in result
+        metrics.record_chat(fallback, result["llm_seconds"])
+        write_json_log(
+            resolved_log,
+            event="chat",
+            request_id=request.state.request_id,
+            model=result["model"],
+            used_model=result["used_model"],
+            sources_count=len(result["sources"]),
+            search_seconds=result["search_seconds"],
+            llm_seconds=result["llm_seconds"],
+            **({"model_error": result["model_error"]} if fallback else {}),
+        )
+        return {
+            key: result[key]
+            for key in (
+                "answer",
+                "sources",
+                "used_model",
+                "model",
+                "search_seconds",
+                "llm_seconds",
+            )
+        }
 
     @app.get(
         "/api/sources", dependencies=[Depends(require_admin)], tags=["Administration"]
