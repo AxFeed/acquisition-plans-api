@@ -9,3 +9,4 @@ acquisition_plans/donnees/*.sqlite3
 acquisition_plans/donnees/*.jsonl
 acquisition_plans/tests/rapport_evaluation_recherche.json
 acquisition_plans/donnees/big_data/cache/
+acquisition_plans/tests/rapport_validation_modele.json

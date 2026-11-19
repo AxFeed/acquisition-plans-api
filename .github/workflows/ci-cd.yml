@@ -1,6 +1,7 @@
 # Chaîne d'intégration et de livraison continues de acquisition-plans-api.
 # Ordre : qualité du code et contrôle des données -> tests -> évaluation de la
-# recherche -> livraison de l'image Docker (seulement sur main).
+# recherche -> validation du modèle de langage -> livraison de l'image Docker
+# (seulement sur main).
 
 name: CI/CD acquisition-plans-api
 
@@ -114,9 +115,41 @@ jobs:
           path: acquisition_plans/tests/rapport_evaluation_recherche.json
           if-no-files-found: ignore
 
+  validation_modele:
+    name: Validation du modèle de langage
+    needs: evaluation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      ollama:
+        image: ollama/ollama:0.40.16
+        ports:
+          - 11434:11434
+    env:
+      OLLAMA_BASE_URL: http://127.0.0.1:11434
+      OLLAMA_CHAT_MODEL: qwen3:4b-instruct-2507-q4_K_M
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Téléchargement du modèle dans Ollama
+        run: |
+          curl -fsS --retry 15 --retry-delay 2 --retry-connrefused "$OLLAMA_BASE_URL/api/version"
+          curl -fsS "$OLLAMA_BASE_URL/api/pull" -d "{\"model\": \"$OLLAMA_CHAT_MODEL\", \"stream\": false}"
+      - name: Questions de référence posées au modèle (échec sous les seuils)
+        run: python -B -m acquisition_plans.tests.evaluer_modele
+      - name: Publication du rapport de validation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapport-validation-modele
+          path: acquisition_plans/tests/rapport_validation_modele.json
+          if-no-files-found: ignore
+
   livraison:
     name: Construction, publication et vérification de l'image
-    needs: [tests, evaluation]
+    needs: [tests, evaluation, validation_modele]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:

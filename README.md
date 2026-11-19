@@ -1,6 +1,6 @@
 # acquisition-plans-api
 
-API REST qui met à disposition les données de plans techniques ferroviaires : objets des plans, nomenclature des équipements, guide des symboles, bulletins et interventions de maintenance, liste des gares de voyageurs et circuits de voie du réseau ferré national. Les sept sources (fichiers JSON et CSV, page HTML, flux RSS, API REST publique, base PostgreSQL, fichiers Parquet interrogés avec DuckDB) sont collectées, contrôlées, nettoyées et stockées dans SQLite, puis exposées par une API FastAPI, avec une recherche par mots-clés et des routes d'administration protégées par jeton.
+API REST qui met à disposition les données de plans techniques ferroviaires : objets des plans, nomenclature des équipements, guide des symboles, bulletins et interventions de maintenance, liste des gares de voyageurs et circuits de voie du réseau ferré national. Les sept sources (fichiers JSON et CSV, page HTML, flux RSS, API REST publique, base PostgreSQL, fichiers Parquet interrogés avec DuckDB) sont collectées, contrôlées, nettoyées et stockées dans SQLite, puis exposées par une API FastAPI, avec une recherche par mots-clés, un assistant qui répond avec un modèle de langage local (Ollama), réservé aux porteurs d'un jeton, et des routes d'administration protégées par jeton.
 
 Le dépôt sert surtout à démontrer une chaîne d'intégration et de livraison continues avec GitHub Actions.
 
@@ -16,6 +16,7 @@ acquisition_plans/
 │                  (api_rest.py), la base PostgreSQL (base_de_donnees.py) et le big data (big_data.py)
 ├── stockage/      schéma SQLite (schema.sql) et requêtes (PlanDatabase)
 ├── recherche/     recherche des extraits par mots-clés
+├── generation/    réponse du modèle de langage à partir des extraits (Ollama), avec repli sur les extraits
 ├── api/           application FastAPI (create_app)
 ├── surveillance/  métriques HTTP au format Prometheus et journal JSON
 ├── donnees/       données de démonstration ; instantanés des extractions dans api/, base/ et big_data/ ;
@@ -89,12 +90,28 @@ Au premier démarrage, la base est créée et les données de `donnees/` sont co
 | `GET /metrics` | public | compteurs HTTP au format Prometheus |
 | `GET /api/plans` | public | résumé de chaque plan : objets, groupes, objets sans position |
 | `POST /api/search` | public | extraits les plus proches d'une requête (`query` de 2 à 300 caractères, `top_k` de 1 à 10) |
+| `POST /api/chat` | jeton utilisateur | réponse du modèle à une question (`question` de 2 à 500 caractères), avec ses sources, ses durées et `used_model` |
 | `GET /api/sources` | jeton | documents et extraits par type de source, contrôle d'intégrité |
 | `POST /api/ingest` | jeton | relance la collecte ; un document déjà connu n'est pas réenregistré |
 
 Sans jeton, les routes d'administration répondent 401 ; avec un mauvais jeton, 403.
 
-Sur `/metrics`, `ilv_http_errors_total` compte les erreurs du service (codes 5xx, y compris une exception non gérée, renvoyée en 500 avec un message générique et journalisée avec son type) ; `ilv_http_client_errors_total` compte à part les requêtes refusées (codes 4xx : jeton absent ou faux, saisie invalide, route inconnue comme `/favicon.ico` demandée par un navigateur).
+### Le modèle de langage
+
+`POST /api/chat` exige l'en-tête `Authorization: Bearer <jeton>`, comparé en temps constant à la variable `CHAT_API_KEY` : 401 sans jeton (ou si la variable est vide), 403 avec un mauvais jeton. La documentation OpenAPI (`/docs`) décrit ce schéma d'authentification et permet d'essayer la route avec le bouton *Authorize*.
+
+La route cherche les quatre meilleurs extraits, puis demande la réponse au modèle servi par Ollama (`OLLAMA_BASE_URL`, par défaut `http://127.0.0.1:11434` ; modèle `OLLAMA_CHAT_MODEL`, par défaut `qwen3:4b-instruct-2507-q4_K_M`). Le message système impose de répondre en français, à partir des seuls extraits, en les citant ([1]), et de refuser quand l'information manque. La génération est réglée pour être reproductible : température 0, graine fixe, 220 jetons au plus. Sans extrait, la route renvoie le refus sans appeler le modèle ; si Ollama ne répond pas, ou pas avec le modèle demandé, elle renvoie les deux meilleurs extraits avec `used_model: false`, et le journal note la cause.
+
+```powershell
+ollama pull qwen3:4b-instruct-2507-q4_K_M
+$env:CHAT_API_KEY = "<jeton utilisateur>"
+python -B -m uvicorn acquisition_plans.api.app:app --host 127.0.0.1 --port 8000
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/chat -Headers @{ Authorization = "Bearer <jeton utilisateur>" } -ContentType "application/json" -Body '{"question": "Quelle est la position du sectionneur EQUIP_A#101 ?"}'
+```
+
+Dans un conteneur, Ollama tourne sur la machine hôte : ajouter `-e OLLAMA_BASE_URL=http://host.docker.internal:11434 -e CHAT_API_KEY=<jeton utilisateur>` à `docker run`.
+
+Sur `/metrics`, `ilv_http_errors_total` compte les erreurs du service (codes 5xx, y compris une exception non gérée, renvoyée en 500 avec un message générique et journalisée avec son type) ; `ilv_http_client_errors_total` compte à part les requêtes refusées (codes 4xx : jeton absent ou faux, saisie invalide, route inconnue comme `/favicon.ico` demandée par un navigateur). Pour le modèle : `ilv_chat_requests_total` (questions), `ilv_chat_fallback_total` (réponses données sans le modèle) et `ilv_llm_duration_seconds_sum` (durée cumulée de génération). Le journal ajoute pour chaque question une ligne `chat`, avec le même identifiant que la ligne HTTP, le modèle, `used_model`, le nombre de sources et les durées, sans le texte de la question.
 
 ## Suivi des incidents
 
@@ -111,11 +128,14 @@ python -B -m acquisition_plans.tests.valider_donnees
 python -B -m coverage run --source=acquisition_plans --omit="*/tests/*" -m unittest discover -s acquisition_plans/tests -p "test_*.py" -v
 python -B -m coverage report
 python -B -m acquisition_plans.tests.evaluer_recherche
+python -B -m acquisition_plans.tests.evaluer_modele
 ```
 
 Le test d'intégration de la base (`tests/test_base_de_donnees.py`) interroge la vraie base quand `MAINTENANCE_DB_URL` est définie (conteneur lancé comme plus haut) ; sinon il est ignoré et les autres tests utilisent une connexion simulée.
 
-La dernière commande pose les douze questions de `tests/questions_reference.json` à la recherche, dont une par source extraite (base de maintenance, big data, API). Elle vérifie que la source attendue figure dans les quatre premiers résultats (taux minimal 87,5 %), que le rang réciproque moyen atteint 0,6 et qu'aucun résultat ne dépasse un score de 0,5 pour la question hors corpus ; elle écrit `tests/rapport_evaluation_recherche.json`.
+La dernière commande pose les douze questions de `tests/questions_reference.json` à la recherche, dont une par source extraite (base de maintenance, big data, API).
+
+`evaluer_modele` pose les mêmes questions au modèle (Ollama lancé, modèle téléchargé). Une question est réussie si la réponse vient du modèle et contient elle-même chaque fait attendu (`expected_answer`), par exemple les coordonnées `140` et `280` ; pour la question hors corpus, le fait attendu est le refus. Seuils : toutes les réponses viennent du modèle, la question hors corpus est refusée, au moins 80 % des autres réponses contiennent leurs faits. Le rapport `tests/rapport_validation_modele.json` garde le modèle, la version d'Ollama, chaque réponse et sa durée. Les tests automatisés, eux, remplacent Ollama par un faux serveur. Elle vérifie que la source attendue figure dans les quatre premiers résultats (taux minimal 87,5 %), que le rang réciproque moyen atteint 0,6 et qu'aucun résultat ne dépasse un score de 0,5 pour la question hors corpus ; elle écrit `tests/rapport_evaluation_recherche.json`.
 
 ## Chaîne d'intégration et de livraison continues
 
@@ -129,14 +149,15 @@ Le fichier `.github/workflows/ci-cd.yml` est lu par GitHub Actions. Aucun secret
 | `donnees` | — | Contrôle des fichiers de `donnees/` : plans JSON (champs, positions, identifiants uniques), colonnes du CSV, articles du guide HTML, bulletins RSS, instantanés de l'API, de la base et du big data (champs, totaux cohérents) | une donnée source est invalide |
 | `tests` | `qualite`, `donnees` | Lancement de la base de maintenance dans un conteneur PostgreSQL, puis tests unitaires et d'intégration (dont les vraies requêtes SQL sur cette base), mesure de couverture ; rapport HTML publié en artefact | la base ne démarre pas, un test échoue ou la couverture est sous 85 % |
 | `evaluation` | `tests` | Questions de référence posées à la recherche ; rapport JSON publié en artefact | un seuil n'est pas atteint |
-| `livraison` | `tests`, `evaluation` | Seulement sur un envoi vers `main` : construction de l'image, publication sur GitHub Container Registry (étiquettes `<sha>` et `latest`), lancement de l'image publiée et appel de `/health` | la construction, la publication ou le contrôle de santé échoue |
+| `validation_modele` | `evaluation` | Ollama 0.40.16 dans un conteneur de service, téléchargement du modèle, questions de référence posées au modèle ; rapport JSON publié en artefact | un seuil n'est pas atteint |
+| `livraison` | `tests`, `evaluation`, `validation_modele` | Seulement sur un envoi vers `main` : construction de l'image, publication sur GitHub Container Registry (étiquettes `<sha>` et `latest`), lancement de l'image publiée et appel de `/health` | la construction, la publication ou le contrôle de santé échoue |
 
 **Installer la chaîne** : créer le dépôt sur GitHub et y envoyer ce contenu ; GitHub Actions détecte le workflow sans autre configuration. Les artefacts sont téléchargeables sur la page de chaque exécution.
 
 **Tester la chaîne** :
 
-1. Envoyer un commit sur une branche et ouvrir une pull request vers `main` : `qualite`, `donnees`, `tests` et `evaluation` s'exécutent, la livraison est ignorée.
-2. Fusionner la pull request : les cinq jobs s'exécutent et l'image apparaît dans l'onglet *Packages* du compte.
+1. Envoyer un commit sur une branche et ouvrir une pull request vers `main` : `qualite`, `donnees`, `tests`, `evaluation` et `validation_modele` s'exécutent, la livraison est ignorée.
+2. Fusionner la pull request : les six jobs s'exécutent et l'image apparaît dans l'onglet *Packages* du compte.
 3. Vérifier un échec volontaire : sur une branche, supprimer la colonne `description` de `donnees/nomenclature_equipements.csv` ; le job `donnees` échoue et bloque les tests.
 
 **Récupérer l'image livrée** (le paquet doit être rendu public dans ses paramètres, *Package settings*, *Change visibility*, sinon un `docker login ghcr.io` est nécessaire) :
@@ -154,6 +175,7 @@ Les données sont techniques : plans, documents et base de maintenance fictifs, 
 
 - La chaîne livre une image dans un registre ; aucun serveur de recette n'est déployé.
 - La recherche est lexicale : elle ne comprend ni les synonymes ni les accents, et des textes longs qui répètent des mots courts peuvent passer devant le bon document (question Q02 depuis l'ajout des interventions).
+- Le modèle tourne sur processeur : quelques secondes par réponse sur un poste, davantage sur les machines de GitHub. La validation porte sur douze questions, ce qui reste un petit échantillon.
 - Les extractions (API, base, big data) se lancent à la main ; leurs instantanés sont versionnés et contrôlés par la chaîne, mais aucune collecte n'est planifiée.
 - Le volume big data reste modeste (84 867 circuits de voie) : la technique, format en colonnes et moteur analytique, est celle qui passerait à l'échelle, sur une seule machine.
 - Le lecteur ILV et les plans réels ne sont pas dans ce dépôt.
