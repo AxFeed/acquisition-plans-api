@@ -1,7 +1,7 @@
 # Chaîne d'intégration et de livraison continues de acquisition-plans-api.
 # Ordre : qualité du code, contrôle des données et de la supervision -> tests ->
 # évaluation de la recherche -> validation du modèle de langage -> livraison de
-# l'image Docker (seulement sur main).
+# l'image Docker et déploiement sur l'environnement de recette (seulement sur main).
 
 name: CI/CD acquisition-plans-api
 
@@ -164,7 +164,7 @@ jobs:
   livraison:
     name: Construction, publication et vérification de l'image
     needs: [tests, evaluation, validation_modele]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -201,3 +201,13 @@ jobs:
           done
           docker logs verification
           exit 1
+      - name: Déploiement sur l'environnement de recette
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK" ]; then
+            echo "Aucun crochet de déploiement configuré : étape ignorée."
+            exit 0
+          fi
+          curl -fsS -X POST "$RENDER_DEPLOY_HOOK" > /dev/null
+          echo "Déploiement de la nouvelle image demandé à l'environnement de recette."
