@@ -1,7 +1,7 @@
 # Chaîne d'intégration et de livraison continues de acquisition-plans-api.
-# Ordre : qualité du code et contrôle des données -> tests -> évaluation de la
-# recherche -> validation du modèle de langage -> livraison de l'image Docker
-# (seulement sur main).
+# Ordre : qualité du code, contrôle des données et de la supervision -> tests ->
+# évaluation de la recherche -> validation du modèle de langage -> livraison de
+# l'image Docker (seulement sur main).
 
 name: CI/CD acquisition-plans-api
 
@@ -50,9 +50,23 @@ jobs:
       - name: Validation des plans, de la nomenclature, du guide et du flux RSS
         run: python -B -m acquisition_plans.tests.valider_donnees
 
+  supervision:
+    name: Contrôle de la supervision (Prometheus)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configuration de Prometheus et tests des règles d'alerte (promtool)
+        run: |
+          docker run --rm --entrypoint promtool \
+            -v "$PWD/supervision/prometheus:/etc/prometheus:ro" \
+            prom/prometheus:v3.5.0 check config /etc/prometheus/prometheus.yml
+          docker run --rm --entrypoint promtool -w /etc/prometheus \
+            -v "$PWD/supervision/prometheus:/etc/prometheus:ro" \
+            prom/prometheus:v3.5.0 test rules tests_alertes.yml
+
   tests:
     name: Tests et couverture
-    needs: [qualite, donnees]
+    needs: [qualite, donnees, supervision]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

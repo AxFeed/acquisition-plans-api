@@ -1,0 +1,40 @@
+# Supervision locale : l'API, Prometheus et Grafana, lancés d'une seule commande.
+# Depuis la racine du dépôt :
+#   docker compose -f supervision/docker-compose.yml up -d --build
+# Les jetons et le mot de passe de Grafana sont lus dans l'environnement :
+# aucune valeur par défaut n'est écrite ici.
+name: acquisition-plans-api
+
+services:
+  api:
+    build: ..
+    image: acquisition-plans-api:supervision
+    ports:
+      - "8001:8000"
+    environment:
+      ADMIN_API_KEY: ${ADMIN_API_KEY:?definir ADMIN_API_KEY}
+      CHAT_API_KEY: ${CHAT_API_KEY:?definir CHAT_API_KEY}
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus:/etc/prometheus:ro
+    depends_on:
+      - api
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?definir GRAFANA_ADMIN_PASSWORD}
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus

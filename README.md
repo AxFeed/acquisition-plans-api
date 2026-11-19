@@ -24,6 +24,7 @@ acquisition_plans/
 │                  schéma et lignes de la base de maintenance dans base_maintenance/init.sql
 └── tests/         contrôle des données, tests automatisés et évaluation de la recherche
 .github/workflows/ci-cd.yml   chaîne d'intégration et de livraison continues
+supervision/                  Prometheus (collecte, règles d'alerte et leurs tests) et Grafana (tableau de bord)
 Dockerfile                    image de l'application
 ```
 
@@ -122,6 +123,40 @@ Dans un conteneur, Ollama tourne sur la machine hôte : ajouter `-e OLLAMA_BASE_
 
 Sur `/metrics`, `ilv_http_errors_total` compte les erreurs du service (codes 5xx, y compris une exception non gérée, renvoyée en 500 avec un message générique et journalisée avec son type) ; `ilv_http_client_errors_total` compte à part les requêtes refusées (codes 4xx : jeton absent ou faux, saisie invalide, route inconnue comme `/favicon.ico` demandée par un navigateur). Pour le modèle : `ilv_chat_requests_total` (questions), `ilv_chat_fallback_total` (réponses données sans le modèle) et `ilv_llm_duration_seconds_sum` (durée cumulée de génération). Le journal ajoute pour chaque question une ligne `chat`, avec le même identifiant que la ligne HTTP, le modèle, `used_model`, le nombre de sources et les durées, sans le texte de la question.
 
+## Supervision : Prometheus, alertes et Grafana
+
+Le dossier `supervision/` lance l'API, Prometheus et Grafana en conteneurs, d'une seule commande. Les jetons et le mot de passe de Grafana sont lus dans l'environnement : aucune valeur par défaut n'est écrite dans le dépôt.
+
+```powershell
+$env:ADMIN_API_KEY = "<jeton administrateur>"
+$env:CHAT_API_KEY = "<jeton utilisateur>"
+$env:GRAFANA_ADMIN_PASSWORD = "<mot de passe Grafana>"
+docker compose -f supervision/docker-compose.yml up -d --build
+```
+
+- API : http://127.0.0.1:8001 (elle appelle l'Ollama de la machine hôte) ;
+- Prometheus : http://localhost:9090 (*Status*, *Targets* : la cible doit être `UP` ; *Alerts* : les quatre règles) ;
+- Grafana : http://localhost:3000, compte `admin`, tableau « acquisition-plans-api : API et modèle de langage ».
+
+Prometheus collecte `/metrics` toutes les 15 secondes (`supervision/prometheus/prometheus.yml`) et évalue quatre règles (`alertes.yml`) :
+
+| Alerte | Condition | Gravité |
+|---|---|---|
+| `ApiIndisponible` | la cible ne répond plus pendant 1 minute | critique |
+| `TauxErreursServeur` | plus de 5 % d'erreurs 5xx sur 15 minutes, pendant 5 minutes | avertissement |
+| `ReponsesSansModele` | au moins une réponse donnée sans le modèle en 15 minutes | avertissement |
+| `GenerationLente` | génération moyenne au-delà de 25 s sur 15 minutes, pendant 5 minutes | avertissement |
+
+Les règles sont testées sans rien lancer, sur des séries simulées minute par minute (`tests_alertes.yml`) :
+
+```powershell
+docker run --rm --entrypoint promtool -w /etc/prometheus -v "${PWD}\supervision\prometheus:/etc/prometheus:ro" prom/prometheus:v3.5.0 test rules tests_alertes.yml
+```
+
+Le tableau de bord Grafana (`supervision/grafana/dashboards/acquisition-plans-api.json`, chargé au démarrage) compte huit panneaux : disponibilité de l'API, questions, réponses sans le modèle et refus 4xx sur une heure, requêtes par minute, taux d'erreurs 5xx, latence de génération et latence HTTP. Chaque titre donne la fenêtre de calcul, chaque panneau son unité et une description qui rappelle le seuil d'alerte ; les seuils sont tracés en orange sur les courbes. Le test `tests/test_supervision_config.py` vérifie que le tableau de bord et les règles n'utilisent que des compteurs réellement exposés par l'API.
+
+Pour voir une alerte se déclencher : `docker compose -f supervision/docker-compose.yml stop api` ; `ApiIndisponible` passe à « pending », puis à « firing » au bout d'une minute. Pour tout arrêter : `docker compose -f supervision/docker-compose.yml down`.
+
 ## Suivi des incidents
 
 Un incident est décrit dans un ticket de l'onglet *Issues* (étiquette `bug`) : symptôme, reproduction, diagnostic. La correction est développée sur une branche avec un test qui reproduit le défaut, puis fusionnée par une pull request qui ferme le ticket après le passage de la chaîne.
@@ -155,8 +190,9 @@ Le fichier `.github/workflows/ci-cd.yml` est lu par GitHub Actions. Aucun secret
 | Job | Dépend de | Ce qu'il fait | Échoue si |
 |---|---|---|---|
 | `qualite` | — | Ruff (règles E, F, B, SIM, C4, ARG) et Black | une règle de style n'est pas respectée |
+| `supervision` | — | `promtool` : configuration de Prometheus valide et tests des quatre règles d'alerte sur des séries simulées | la configuration est invalide ou une alerte ne se déclenche pas comme prévu |
 | `donnees` | — | Contrôle des fichiers de `donnees/` : plans JSON (champs, positions, identifiants uniques), colonnes du CSV, articles du guide HTML, bulletins RSS, instantanés de l'API, de la base, du big data (champs, totaux cohérents) et des pages web (licence, adresses, paragraphes) | une donnée source est invalide |
-| `tests` | `qualite`, `donnees` | Lancement de la base de maintenance dans un conteneur PostgreSQL, puis tests unitaires et d'intégration (dont les vraies requêtes SQL sur cette base), mesure de couverture ; rapport HTML publié en artefact | la base ne démarre pas, un test échoue ou la couverture est sous 85 % |
+| `tests` | `qualite`, `donnees`, `supervision` | Lancement de la base de maintenance dans un conteneur PostgreSQL, puis tests unitaires et d'intégration (dont les vraies requêtes SQL sur cette base), mesure de couverture ; rapport HTML publié en artefact | la base ne démarre pas, un test échoue ou la couverture est sous 85 % |
 | `evaluation` | `tests` | Questions de référence posées à la recherche ; rapport JSON publié en artefact | un seuil n'est pas atteint |
 | `validation_modele` | `evaluation` | Ollama 0.40.16 dans un conteneur de service, téléchargement du modèle, questions de référence posées au modèle ; rapport JSON publié en artefact | un seuil n'est pas atteint |
 | `livraison` | `tests`, `evaluation`, `validation_modele` | Seulement sur un envoi vers `main` : construction de l'image, publication sur GitHub Container Registry (étiquettes `<sha>` et `latest`), lancement de l'image publiée et appel de `/health` | la construction, la publication ou le contrôle de santé échoue |
@@ -165,8 +201,8 @@ Le fichier `.github/workflows/ci-cd.yml` est lu par GitHub Actions. Aucun secret
 
 **Tester la chaîne** :
 
-1. Envoyer un commit sur une branche et ouvrir une pull request vers `main` : `qualite`, `donnees`, `tests`, `evaluation` et `validation_modele` s'exécutent, la livraison est ignorée.
-2. Fusionner la pull request : les six jobs s'exécutent et l'image apparaît dans l'onglet *Packages* du compte.
+1. Envoyer un commit sur une branche et ouvrir une pull request vers `main` : `qualite`, `donnees`, `supervision`, `tests`, `evaluation` et `validation_modele` s'exécutent, la livraison est ignorée.
+2. Fusionner la pull request : les sept jobs s'exécutent et l'image apparaît dans l'onglet *Packages* du compte.
 3. Vérifier un échec volontaire : sur une branche, supprimer la colonne `description` de `donnees/nomenclature_equipements.csv` ; le job `donnees` échoue et bloque les tests.
 
 **Récupérer l'image livrée** (le paquet doit être rendu public dans ses paramètres, *Package settings*, *Change visibility*, sinon un `docker login ghcr.io` est nécessaire) :

@@ -1,0 +1,39 @@
+# Règles d'alerte, testées par tests_alertes.yml (promtool test rules) dans la chaîne.
+groups:
+  - name: acquisition-plans-api
+    rules:
+      - alert: ApiIndisponible
+        expr: up{job="acquisition_plans_api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: L'API ne répond plus à Prometheus depuis une minute.
+
+      - alert: TauxErreursServeur
+        expr: >-
+          rate(ilv_http_errors_total[15m]) / rate(ilv_http_requests_total[15m])
+          > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Plus de 5 % d'erreurs serveur (5xx) sur 15 minutes.
+
+      - alert: ReponsesSansModele
+        expr: increase(ilv_chat_fallback_total[15m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: Au moins une réponse donnée sans le modèle de langage en 15 minutes.
+
+      - alert: GenerationLente
+        expr: >-
+          rate(ilv_llm_duration_seconds_sum[15m]) / rate(ilv_chat_requests_total[15m])
+          > 25
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Génération moyenne au-delà de 25 secondes sur 15 minutes.

@@ -1,0 +1,10 @@
+# Charge au démarrage les tableaux de bord JSON du dossier monté.
+apiVersion: 1
+providers:
+  - name: acquisition-plans-api
+    folder: acquisition-plans-api
+    type: file
+    disableDeletion: true
+    allowUiUpdates: false
+    options:
+      path: /var/lib/grafana/dashboards
