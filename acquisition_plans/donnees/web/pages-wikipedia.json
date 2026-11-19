@@ -1,0 +1,26 @@
+{
+  "source": "Wikipédia en français, pages web (scraping)",
+  "licence": "CC BY-SA 4.0",
+  "auteurs": "Contributeurs de Wikipédia",
+  "robots_txt": "https://fr.wikipedia.org/robots.txt",
+  "user_agent": "collecte-pedagogique/1.0",
+  "date_collecte": "2026-11-19T14:52:14+00:00",
+  "pages": [
+    {
+      "nom": "block-automatique-lumineux",
+      "url": "https://fr.wikipedia.org/wiki/Block_automatique_lumineux",
+      "titre": "Block automatique lumineux",
+      "paragraphes": [
+        "Le block automatique lumineux (BAL) est un système de signalisation ferroviaire automatique utilisé en France pour assurer l'espacement des trains circulant sur une même voie. Il fait appel à des signaux lumineux placés à l'entrée de chaque canton, et à des circuits de voie permettant d'en changer l'aspect en fonction de l'avancement des trains."
+      ]
+    },
+    {
+      "nom": "circuit-de-voie",
+      "url": "https://fr.wikipedia.org/wiki/Circuit_de_voie",
+      "titre": "Circuit de voie",
+      "paragraphes": [
+        "Un circuit de voie est un système de détection des circulations qui utilise un circuit électrique, empruntant les rails d'une voie ferrée, pour détecter la présence d'un train dans la section de voie considérée appelée zone. Ce dispositif de détection de circulation peut être utilisé conjointement ou seul pour commander automatiquement les signaux. Ces signaux peuvent être des signaux d'arrêt comme ceux qui servent à la protection d'appareils de voie (aiguillages), ils peuvent être aussi des signaux d'espacement. Dans les systèmes dit de block automatique (comme le block automatique lumineux, ou BAL), ce dispositif sert à réguler l'espacement des trains, selon le principe du cantonnement."
+      ]
+    }
+  ]
+}

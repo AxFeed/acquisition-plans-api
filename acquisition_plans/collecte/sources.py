@@ -1,6 +1,6 @@
 """Collect plan exports (JSON), CSV nomenclature, HTML guide and RSS maintenance notes,
 then the snapshots saved by the extraction scripts (REST API, PostgreSQL database,
-big data with DuckDB).
+big data with DuckDB, web pages).
 
 The plans are JSON exports of fictitious ILV plans. The ILV reader that produced them
 belongs to the company project and is not part of this repository.
@@ -349,6 +349,24 @@ class PlanCollector:
         )
         return self.database.save_document(stored_doc, self._build_chunks(sentences))
 
+    def ingest_web_snapshot(self, json_path: str | Path) -> int:
+        """Store each page saved by ``collecte.scraping_web`` as one document."""
+        snapshot = json.loads(Path(json_path).read_text(encoding="utf-8"))
+        for page in snapshot["pages"]:
+            sentences = [
+                f"Wikipedia, {page['titre']} : {paragraph}"
+                for paragraph in page["paragraphes"]
+            ]
+            stored_doc = StoredDocument(
+                title=page["nom"],
+                source_type="scraping_web",
+                source_path=page["url"],
+                document_hash=compute_text_hash(" ".join(sentences)),
+                sector="transverse",
+            )
+            self.database.save_document(stored_doc, self._build_chunks(sentences))
+        return len(snapshot["pages"])
+
     def ingest_directory(self, data_dir: str | Path) -> dict[str, int]:
         """Ingest all supported files from a data directory."""
         folder = Path(data_dir)
@@ -360,6 +378,7 @@ class PlanCollector:
             "api_rest": 0,
             "base_de_donnees": 0,
             "big_data": 0,
+            "scraping_web": 0,
         }
         for plan_path in sorted(folder.glob("*.json")):
             self.ingest_plan_export(plan_path)
@@ -382,4 +401,6 @@ class PlanCollector:
         for snapshot_path in sorted((folder / "big_data").glob("*.json")):
             self.ingest_big_data_snapshot(snapshot_path)
             counts["big_data"] += 1
+        for snapshot_path in sorted((folder / "web").glob("*.json")):
+            counts["scraping_web"] += self.ingest_web_snapshot(snapshot_path)
         return counts
